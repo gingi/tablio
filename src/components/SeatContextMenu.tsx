@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Guest, TableData } from "./TablePlanner";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -85,8 +86,14 @@ export function SeatContextMenu({
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-50 bg-black/20" onClick={handleClickOutside}>
+    // Use a portal so z-index is not constrained by table container (which has transform)
+    const portalContent = (
+        <div
+            className="fixed inset-0 z-[100] bg-black/20"
+            onClick={handleClickOutside}
+            role="dialog"
+            aria-modal="true"
+        >
             <Card
                 className="absolute bg-white shadow-xl border w-80"
                 style={{
@@ -225,4 +232,9 @@ export function SeatContextMenu({
             </Card>
         </div>
     );
+
+    if (typeof document !== "undefined") {
+        return createPortal(portalContent, document.body);
+    }
+    return portalContent;
 }

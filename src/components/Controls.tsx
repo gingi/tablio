@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { TableData, Guest } from "./TablePlanner";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -31,6 +31,7 @@ export function Controls({
     canUndo,
 }: ControlsProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [showResetConfirm, setShowResetConfirm] = useState(false);
     const exportAssignments = () => {
         const assignments: { name: string; table: string }[] = [];
 
@@ -129,13 +130,41 @@ export function Controls({
                         <Button
                             variant="destructive"
                             size="sm"
-                            onClick={onResetAssignments}
+                            onClick={() => setShowResetConfirm(true)}
                             className="flex items-center gap-1 w-full"
                             disabled={tables.every((t) => t.guests.length === 0)}
                         >
                             <RotateCcw className="w-3 h-3" />
                             Reset All Assignments
                         </Button>
+                        {showResetConfirm && (
+                            <div className="mt-2 p-3 border rounded-md bg-white shadow-sm space-y-2">
+                                <div className="text-xs font-medium">
+                                    Clear all guest assignments? This cannot be undone.
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="h-6 text-xs"
+                                        onClick={() => {
+                                            onResetAssignments();
+                                            setShowResetConfirm(false);
+                                        }}
+                                    >
+                                        Confirm
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-6 text-xs"
+                                        onClick={() => setShowResetConfirm(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     {!canUndo && (
                         <div className="text-xs text-muted-foreground mt-1">No actions to undo</div>

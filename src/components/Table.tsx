@@ -49,6 +49,7 @@ export function Table({
     });
 
     const [showInfoDialog, setShowInfoDialog] = useState(false);
+    const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
     useEffect(() => {
         if (isEditing && inputRef.current) {
@@ -57,7 +58,8 @@ export function Table({
         }
     }, [isEditing]);
 
-    const handleNameEdit = () => {
+    const handleNameEdit = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
         setIsEditing(true);
         setEditName(table.name);
     };
@@ -104,7 +106,7 @@ export function Table({
     };
 
     const handleSeatClick = (e: React.MouseEvent, seatIndex: number) => {
-        e.stopPropagation();
+        e.stopPropagation(); // prevent table selection loss
         const guest = table.guests[seatIndex];
 
         setContextMenu({
@@ -189,17 +191,53 @@ export function Table({
         }
     };
 
-    // Oval table dimensions - always 12 seats (made much larger)
+    // Oval table dimensions - always 12 seats (tuned for better spacing)
     const tableWidth = 240;
     const tableHeight = 160;
-    const seatPositions = Array.from({ length: 12 }, (_, i) => {
-        // Distribute seats around oval perimeter
-        const t = (i / 12) * 2 * Math.PI;
-        return {
-            x: Math.cos(t) * (tableWidth / 2),
-            y: Math.sin(t) * (tableHeight / 2),
-        };
-    });
+    const seatCount = 12;
+    // Offset ring so seats sit just outside table edge
+    const seatRingOffsetX = 14; // horizontal offset from table edge
+    const seatRingOffsetY = 14; // vertical offset from table edge
+    const seatDiameter = 48; // uniform seat size (w-12 h-12)
+    const seatRadius = seatDiameter / 2;
+
+    // Precompute seat center positions with approximate equal arc-length spacing.
+    // Approach: sample ellipse finely, accumulate arc length, then pick points at regular intervals.
+    const xRadius = tableWidth / 2 + seatRingOffsetX;
+    const yRadius = tableHeight / 2 + seatRingOffsetY;
+    const samples = 720; // 0.5 degree increments for smoothness
+    const points: { t: number; x: number; y: number; s: number }[] = [];
+    let prevX = xRadius;
+    let prevY = 0;
+    let acc = 0;
+    for (let i = 0; i <= samples; i++) {
+        const t = (i / samples) * 2 * Math.PI;
+        const x = Math.cos(t) * xRadius;
+        const y = Math.sin(t) * yRadius;
+        if (i > 0) {
+            const dx = x - prevX;
+            const dy = y - prevY;
+            acc += Math.hypot(dx, dy);
+        }
+        points.push({ t, x, y, s: acc });
+        prevX = x;
+        prevY = y;
+    }
+    const totalPerimeter = acc;
+    const segment = totalPerimeter / seatCount;
+    const seatPositions = [] as { x: number; y: number }[];
+    for (let i = 0; i < seatCount; i++) {
+        const target = i * segment;
+        // binary search or linear scan; with 720 samples linear is fine
+        let chosen = points[0];
+        for (let j = 1; j < points.length; j++) {
+            if (points[j].s >= target) {
+                chosen = points[j];
+                break;
+            }
+        }
+        seatPositions.push({ x: chosen.x, y: chosen.y });
+    }
 
     // Determine table status based on occupancy
     const getTableStatus = () => {
@@ -279,39 +317,53 @@ export function Table({
                     height: tableHeight,
                 }}
             >
+                {/* Drag handle removed from inside; now rendered after seats for higher stacking */}
                 {/* Table name and info */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
                     {isEditing ? (
-                        <div className="pointer-events-auto flex items-center gap-1 mb-1">
+                        <form
+                            className="pointer-events-auto flex items-center gap-1 mb-1"
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                handleNameSave();
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <Input
                                 ref={inputRef}
                                 value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 onBlur={handleNameSave}
-                                className="w-20 h-6 text-xs text-center px-1"
+                                className="w-24 h-6 text-xs text-center px-1"
                             />
                             <Button
                                 size="sm"
                                 variant="ghost"
+                                type="submit"
                                 className="w-4 h-4 p-0"
-                                onClick={handleNameSave}
                             >
                                 <Check className="w-3 h-3" />
                             </Button>
-                        </div>
+                        </form>
                     ) : (
-                        <div className="pointer-events-auto flex items-center gap-1 mb-1 group">
-                            <div className="font-medium text-sm">{table.name}</div>
+                        <div
+                            className="pointer-events-auto flex items-center gap-1 mb-1 group"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button
+                                type="button"
+                                className="font-medium text-sm focus:outline-none"
+                                onClick={(e) => handleNameEdit(e)}
+                            >
+                                {table.name}
+                            </button>
                             {isSelected && (
                                 <Button
                                     size="sm"
                                     variant="ghost"
                                     className="w-4 h-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={(e: React.MouseEvent) => {
-                                        e.stopPropagation();
-                                        handleNameEdit();
-                                    }}
+                                    onClick={(e: React.MouseEvent) => handleNameEdit(e)}
                                 >
                                     <Edit2 className="w-3 h-3" />
                                 </Button>
@@ -357,39 +409,37 @@ export function Table({
                     </Button>
                 )}
 
-                {/* Remove button */}
+                {/* Central overlay controls (remove + drag) */}
                 {isSelected && (
-                    <Button
-                        size="sm"
-                        variant="destructive"
-                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full p-0 pointer-events-auto"
-                        onClick={(e: React.MouseEvent) => {
-                            e.stopPropagation();
-                            onRemoveTable(table.id);
-                        }}
-                    >
-                        <X className="w-3 h-3" />
-                    </Button>
-                )}
-
-                {/* Drag handle */}
-                {isSelected && (
-                    <div
-                        ref={dragHandleRef}
-                        draggable
-                        onDragStart={handleTableDragStart}
-                        onDragEnd={handleTableDragEnd}
-                        className="absolute -top-8 left-1/2 transform -translate-x-1/2 pointer-events-auto cursor-grab active:cursor-grabbing"
-                    >
-                        <Badge
-                            variant="outline"
-                            className="bg-white hover:bg-gray-50 transition-colors"
-                        >
-                            <Move className="w-3 h-3 mr-1" />
-                            Drag to move
-                        </Badge>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="flex gap-2 pointer-events-auto bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
+                            <Button
+                                size="sm"
+                                variant="destructive"
+                                className="w-6 h-6 p-0"
+                                onClick={(e: React.MouseEvent) => {
+                                    e.stopPropagation();
+                                    setShowRemoveConfirm(true);
+                                }}
+                                title="Remove table"
+                            >
+                                <X className="w-3 h-3" />
+                            </Button>
+                            <div
+                                ref={dragHandleRef}
+                                draggable
+                                onDragStart={handleTableDragStart}
+                                onDragEnd={handleTableDragEnd}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1 cursor-grab active:cursor-grabbing select-none text-[10px] font-medium px-2 h-6 rounded-full border bg-white shadow-sm"
+                                title="Drag to move"
+                            >
+                                <Move className="w-3 h-3" /> Move
+                            </div>
+                        </div>
                     </div>
                 )}
+
             </div>
 
             {/* Seats */}
@@ -414,14 +464,14 @@ export function Table({
                 return (
                     <div
                         key={index}
-                        className={`absolute w-12 h-12 rounded-full border-2 flex items-center justify-center text-xs transition-all cursor-pointer hover:scale-110 ${
+                        className={`absolute w-12 h-12 rounded-full border flex items-center justify-center text-[10px] font-medium transition-all cursor-pointer hover:scale-110 z-20 ${
                             guest
-                                ? "bg-blue-100 border-blue-400 text-blue-800 hover:bg-blue-200 cursor-grab active:cursor-grabbing"
+                                ? "bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200 cursor-grab active:cursor-grabbing"
                                 : "bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200"
                         }`}
                         style={{
-                            left: tableWidth / 2 + pos.x - 24,
-                            top: tableHeight / 2 + pos.y - 24,
+                            left: tableWidth / 2 + pos.x - seatRadius,
+                            top: tableHeight / 2 + pos.y - seatRadius,
                         }}
                         title={guest ? guest.name : `Seat ${index + 1}`}
                         onClick={(e) => handleSeatClick(e, index)}
@@ -429,17 +479,53 @@ export function Table({
                         onDragStart={handleSeatDragStart}
                     >
                         {guest ? (
-                            <div className="w-full h-full rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-[10px] leading-tight px-1">
+                            <div className="w-full h-full rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold leading-tight px-1">
                                 <div className="text-center truncate max-w-full">
                                     {getFirstNameLastInitial(guest.name)}
                                 </div>
                             </div>
                         ) : (
-                            <div className="font-medium">{index + 1}</div>
+                            <div>{index + 1}</div>
                         )}
                     </div>
                 );
             })}
+
+            {/* Remove confirmation dialog (lightweight inline) */}
+            {showRemoveConfirm && isSelected && (
+                <div className="absolute inset-0 flex items-center justify-center z-50" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-white border rounded-md shadow-md p-3 w-44 space-y-2">
+                        <div className="text-xs font-medium text-center">
+                            Remove this table?
+                        </div>
+                        <div className="flex gap-2 justify-center">
+                            <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-6 text-xs"
+                                onClick={(e: React.MouseEvent) => {
+                                    e.stopPropagation();
+                                    onRemoveTable(table.id);
+                                    setShowRemoveConfirm(false);
+                                }}
+                            >
+                                Remove
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 text-xs"
+                                onClick={(e: React.MouseEvent) => {
+                                    e.stopPropagation();
+                                    setShowRemoveConfirm(false);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Seat Context Menu */}
             <SeatContextMenu
