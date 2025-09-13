@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none" role="img" aria-label="Tablio logo: table with seats">
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <g filter="url(#glow)">
+  <circle cx="64" cy="64" r="36" fill="url(#table)" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>
+  </g>
+  <!-- Seats (centers on table ring r=36). Seat radius=5. -->
+  <g fill="#fff" stroke="rgba(0,0,0,0.12)" stroke-width="1">
+    <!-- Coordinates recomputed: cx = 64 + 36*cos(theta), cy = 64 + 36*sin(theta) -->
+    <circle cx="64" cy="28" r="5" />
+    <circle cx="95.176" cy="46.0" r="5" />
+    <circle cx="95.176" cy="82.0" r="5" />
+    <circle cx="64" cy="100" r="5" />
+    <circle cx="32.824" cy="82.0" r="5" />
+    <circle cx="32.824" cy="46.0" r="5" />
+  </g>
+  <!-- Clean geometric T with uniform stroke weight (thickness 8) -->
+  <g fill="#fff">
+    <!-- Horizontal bar thickness 8, length 30 -->
+    <rect x="49" y="53" width="30" height="8" rx="4" />
+    <!-- Vertical stem same thickness (8) shorter for centering -->
+    <rect x="60" y="61" width="8" height="16" rx="4" />
+  </g>
+  <!-- Subtle inner highlight on stem -->
+  <rect x="63" y="62" width="2" height="14" rx="1" fill="rgba(255,255,255,0.5)" />
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4338CA"/>
+      <stop offset="1" stop-color="#6D28D9"/>
+    </linearGradient>
+    <radialGradient id="table" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(54 48) rotate(45) scale(72)">
+      <stop stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#4F46E5"/>
+    </radialGradient>
+    <filter id="glow" x="18" y="18" width="92" height="92" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+</svg>

@@ -731,11 +731,24 @@ export function TablePlanner() {
                     className={`flex items-center justify-between gap-2 p-4 border-b border-border flex-shrink-0 ${sidebarCollapsed ? "p-2" : ""}`}
                 >
                     {sidebarCollapsed ? (
-                        <span className="sr-only">Sidebar collapsed</span>
+                        <img
+                            src="/logo.svg"
+                            alt="Tablio"
+                            className="w-6 h-6 rounded-md shadow-sm"
+                            draggable={false}
+                        />
                     ) : (
-                        <div>
-                            <h2>Event Table Planner</h2>
-                            <p className="text-muted-foreground">{guests.length} Guests</p>
+                        <div className="flex items-start gap-3">
+                            <img
+                                src="/logo.svg"
+                                alt="Tablio logo"
+                                className="w-8 h-8 rounded-lg shadow-sm select-none"
+                                draggable={false}
+                            />
+                            <div className="flex flex-col -mt-0.5">
+                                <h1 className="font-semibold text-lg leading-tight tracking-tight">Tablio</h1>
+                                <span className="text-xs text-muted-foreground mt-0.5">{guests.length} guests</span>
+                            </div>
                         </div>
                     )}
                     <button

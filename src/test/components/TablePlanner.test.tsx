@@ -5,11 +5,11 @@ import { TablePlanner } from "@/components/TablePlanner";
 // Basic smoke & interaction tests
 
 describe("TablePlanner", () => {
-    test("renders initial tables and guest count", () => {
+    test("renders branding and guest count", () => {
         render(<TablePlanner />);
-        expect(screen.getByText(/Event Table Planner/i)).toBeInTheDocument();
-        // Guest count paragraph
-        expect(screen.getByText(/Guests$/)).toBeInTheDocument();
+        expect(screen.getByText(/Tablio/i)).toBeInTheDocument();
+        // Guest count line uses 'guests' lowercase after number
+        expect(screen.getByText(/guests$/i)).toBeInTheDocument();
     });
 
     test("can collapse and expand sidebar", () => {
