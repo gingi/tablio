@@ -1,9 +1,9 @@
-import { TablePlanner } from './components/TablePlanner';
+import { TablePlanner } from "./components/TablePlanner";
 
 export default function App() {
-  return (
-    <div className="h-screen">
-      <TablePlanner />
-    </div>
-  );
+    return (
+        <div className="h-screen">
+            <TablePlanner />
+        </div>
+    );
 }
