@@ -1,0 +1,51 @@
+name: Lockfile Integrity
+
+on:
+  pull_request:
+    branches: [ main, master, develop, feature/** ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile:
+    name: Verify package-lock.json unchanged after install & build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Capture original lockfile hash
+        id: orig
+        run: echo "hash=$(sha256sum package-lock.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies (ci)
+        run: npm ci
+
+      - name: Run build (ensures postinstall scripts can't mutate lockfile indirectly)
+        run: npm run build --if-present
+
+      - name: Verify lockfile unchanged
+        run: |
+          new_hash=$(sha256sum package-lock.json | cut -d ' ' -f1)
+          if [ "$new_hash" != "${{ steps.orig.outputs.hash }}" ]; then
+            echo "Lockfile changed after install/build. Did you forget to commit lockfile updates?" >&2
+            echo "Original: ${{ steps.orig.outputs.hash }}" >&2
+            echo "Current : $new_hash" >&2
+            git --no-pager diff --name-only
+            exit 1
+          fi
+          echo "Lockfile integrity verified."
+
+      - name: Run tests (optional)
+        run: npm test --silent
+        if: success()
