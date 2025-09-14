@@ -752,11 +752,6 @@ export function TablePlanner() {
                             </div>
                         </div>
                     )}
-                    {!sidebarCollapsed && (
-                        <span className="mr-2 text-[10px] uppercase tracking-wide text-muted-foreground whitespace-nowrap">
-                            v{appVersion} ({appBuild}-{appCommit})
-                        </span>
-                    )}
                     <button
                         aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                         onClick={() => setSidebarCollapsed((v) => !v)}
@@ -770,11 +765,9 @@ export function TablePlanner() {
                     </button>
                 </div>
 
-                <div
-                    className={`flex-1 overflow-y-auto flex flex-col ${sidebarCollapsed ? "opacity-0 pointer-events-none select-none" : "opacity-100"} transition-opacity duration-200`}
-                >
+                <div className={`flex-1 overflow-y-auto flex flex-col ${sidebarCollapsed ? "opacity-0 pointer-events-none select-none" : "opacity-100"} transition-opacity duration-200`}>
                     {!sidebarCollapsed && (
-                        <div className="flex flex-col flex-1">
+                        <div className="flex flex-col flex-1">{/* scrollable content */}
                             <Summary
                                 totalGuests={guests.length}
                                 assignedGuests={assignedGuests.length}
@@ -804,6 +797,29 @@ export function TablePlanner() {
                             />
                         </div>
                     )}
+                </div>
+
+                <div className={`${sidebarCollapsed ? "hidden" : "flex"} items-center justify-between px-3 py-2 text-xs border-t border-border bg-background/95 backdrop-blur-sm flex-shrink-0`}> 
+                    <a
+                        href="https://github.com/gingi/tablio"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition"
+                        aria-label="Open GitHub repository"
+                    >
+                        <svg
+                            role="img"
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            className="w-4 h-4 fill-current"
+                        >
+                            <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.087-.744.084-.729.084-.729 1.205.084 1.84 1.237 1.84 1.237 1.07 1.835 2.809 1.304 3.495.997.108-.776.418-1.305.762-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.381 1.235-3.221-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.911 1.23 3.221 0 4.61-2.805 5.625-5.475 5.92.435.372.81 1.102.81 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+                        </svg>
+                        <span className="font-medium">GitHub</span>
+                    </a>
+                    <span className="text-[10px] tracking-tight text-muted-foreground whitespace-nowrap">
+                        v{appVersion} ({appBuild}{appCommit ? `-${appCommit}` : ""})
+                    </span>
                 </div>
             </div>
 
