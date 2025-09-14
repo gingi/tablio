@@ -3,7 +3,7 @@ import { TableData, Guest } from "./TablePlanner";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Plus, Users, Download, Save, FolderOpen, Grid3X3, Undo, RotateCcw } from "lucide-react";
+import { PlusIcon as Plus, UsersIcon as Users, DownloadIcon as Download, SaveIcon as Save, FolderOpenIcon as FolderOpen, Grid3X3Icon as Grid3X3, UndoIcon as Undo, RotateCcwIcon as RotateCcw } from "./icons";
 import { CSVImport } from "./CSVImport";
 import { Separator } from "./ui/separator";
 

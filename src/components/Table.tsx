@@ -5,7 +5,7 @@ import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { SeatContextMenu } from "./SeatContextMenu";
 import { TableInfoDialog } from "./TableInfoDialog";
-import { X, Move, Edit2, Check, Info } from "lucide-react";
+import { XIcon as X, MoveIcon as Move, Edit2Icon as Edit2, CheckIcon as Check, InfoIcon as Info } from "./icons";
 
 interface TableProps {
     table: TableData;

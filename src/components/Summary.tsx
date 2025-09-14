@@ -2,7 +2,7 @@ import React from "react";
 import { TableData } from "./TablePlanner";
 import { Card } from "./ui/card";
 import { Progress } from "./ui/progress";
-import { Users, Calendar, CheckCircle } from "lucide-react";
+import { UsersIcon as Users, CalendarIcon as Calendar, CheckCircleIcon as CheckCircle } from "./icons";
 
 interface SummaryProps {
     totalGuests: number;

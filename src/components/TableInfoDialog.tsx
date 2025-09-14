@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
-import { Users, X, GripVertical } from "lucide-react";
+import { UsersIcon as Users, XIcon as X, GripVerticalIcon as GripVertical } from "./icons";
 
 interface TableInfoDialogProps {
     isOpen: boolean;

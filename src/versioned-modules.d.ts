@@ -29,7 +29,6 @@ declare module "@radix-ui/react-toggle@1.1.2" { export * from "@radix-ui/react-t
 declare module "@radix-ui/react-tooltip@1.1.8" { export * from "@radix-ui/react-tooltip"; }
 declare module "embla-carousel-react@8.6.0" { export * from "embla-carousel-react"; }
 declare module "react-day-picker@8.10.1" { export * from "react-day-picker"; }
-declare module "lucide-react@0.487.0" { export * from "lucide-react"; }
 declare module "cmdk@1.1.1" { export * from "cmdk"; }
 declare module "class-variance-authority@0.7.1" { export * from "class-variance-authority"; }
 declare module "input-otp@1.4.2" { export * from "input-otp"; }

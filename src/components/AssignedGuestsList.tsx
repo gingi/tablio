@@ -7,7 +7,7 @@ import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-import { Search, GripVertical, ChevronDown, ChevronRight } from "lucide-react";
+import { SearchIcon as Search, GripVerticalIcon as GripVertical, ChevronDownIcon as ChevronDown, ChevronRightIcon as ChevronRight } from "./icons";
 
 interface AssignedGuestsListProps {
     guests: Guest[];

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import useEmblaCarouselLib from "embla-carousel-react@8.6.0";
-import { ArrowLeft, ArrowRight } from "lucide-react@0.487.0";
+import { ChevronLeftIcon as ArrowLeft, ChevronRightIcon as ArrowRight } from "../icons";
 
 import { cn } from "./utils";
 import { Button } from "./button";

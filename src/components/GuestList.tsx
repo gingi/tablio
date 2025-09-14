@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-import { Search, X, ChevronDown, ChevronRight } from "lucide-react";
+import { SearchIcon as Search, XIcon as X, ChevronDownIcon as ChevronDown, ChevronRightIcon as ChevronRight } from "./icons";
 
 interface GuestListProps {
     guests: Guest[];

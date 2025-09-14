@@ -10,7 +10,7 @@ import { Card } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { toast } from "sonner@2.0.3";
 import { Toaster } from "./ui/sonner";
-import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { ZoomInIcon, ZoomOutIcon, ChevronLeftIcon, ChevronRightIcon } from "./icons";
 import { appVersion, appBuild, appCommit } from "../buildMeta";
 
 export interface Guest {
@@ -758,9 +758,9 @@ export function TablePlanner() {
                         className="h-7 w-7 rounded-md border bg-white hover:bg-blue-50 flex items-center justify-center shadow-sm"
                     >
                         {sidebarCollapsed ? (
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRightIcon className="w-4 h-4" />
                         ) : (
-                            <ChevronLeft className="w-4 h-4" />
+                            <ChevronLeftIcon className="w-4 h-4" />
                         )}
                     </button>
                 </div>
@@ -834,7 +834,7 @@ export function TablePlanner() {
                         disabled={zoom <= 0.3}
                         className="h-8 w-8 p-0"
                     >
-                        <ZoomOut className="h-4 w-4" />
+                        <ZoomOutIcon className="h-4 w-4" />
                     </Button>
                     <Button
                         size="sm"
@@ -851,7 +851,7 @@ export function TablePlanner() {
                         disabled={zoom >= 2}
                         className="h-8 w-8 p-0"
                     >
-                        <ZoomIn className="h-4 w-4" />
+                        <ZoomInIcon className="h-4 w-4" />
                     </Button>
                 </div>
 
