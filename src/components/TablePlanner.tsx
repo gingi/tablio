@@ -732,15 +732,15 @@ export function TablePlanner() {
                 >
                     {sidebarCollapsed ? (
                         <img
-                            src="/logo.svg"
+                            src={`${import.meta.env.BASE_URL}logo.svg`}
                             alt="Tablio"
                             className="w-6 h-6 rounded-md shadow-sm"
                             draggable={false}
                         />
                     ) : (
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
                             <img
-                                src="/logo.svg"
+                                src={`${import.meta.env.BASE_URL}logo.svg`}
                                 alt="Tablio logo"
                                 className="w-8 h-8 rounded-lg shadow-sm select-none"
                                 draggable={false}
@@ -751,10 +751,15 @@ export function TablePlanner() {
                             </div>
                         </div>
                     )}
+                    {!sidebarCollapsed && (
+                        <span className="mr-2 text-[10px] uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                            v{__APP_VERSION__} (build {__APP_BUILD__})
+                        </span>
+                    )}
                     <button
                         aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                         onClick={() => setSidebarCollapsed((v) => !v)}
-                        className="ml-auto h-7 w-7 rounded-md border bg-white hover:bg-blue-50 flex items-center justify-center shadow-sm"
+                        className="h-7 w-7 rounded-md border bg-white hover:bg-blue-50 flex items-center justify-center shadow-sm"
                     >
                         {sidebarCollapsed ? (
                             <ChevronRight className="w-4 h-4" />
@@ -765,10 +770,10 @@ export function TablePlanner() {
                 </div>
 
                 <div
-                    className={`flex-1 overflow-y-auto ${sidebarCollapsed ? "opacity-0 pointer-events-none select-none" : "opacity-100"} transition-opacity duration-200`}
+                    className={`flex-1 overflow-y-auto flex flex-col ${sidebarCollapsed ? "opacity-0 pointer-events-none select-none" : "opacity-100"} transition-opacity duration-200`}
                 >
                     {!sidebarCollapsed && (
-                        <div className="flex flex-col">
+                        <div className="flex flex-col flex-1">
                             <Summary
                                 totalGuests={guests.length}
                                 assignedGuests={assignedGuests.length}

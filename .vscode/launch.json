@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Run Vite + Browser",
+      "configurations": ["Vite Dev Server", "Chrome: Vite App"]
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Vite Dev Server",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": { "NODE_ENV": "development" }
+    },
+    {
+      "name": "Chrome: Vite App",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src",
+      "sourceMaps": true
+    }
+  ]
+}

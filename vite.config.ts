@@ -2,6 +2,16 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
+
+const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, "package.json"), "utf-8"));
+let buildNumber = 0;
+try {
+    const buildMeta = JSON.parse(fs.readFileSync(path.resolve(__dirname, "build-number.json"), "utf-8"));
+    buildNumber = buildMeta.build ?? 0;
+} catch (e) {
+    // ignore if missing
+}
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), "VITE_");
@@ -9,6 +19,10 @@ export default defineConfig(({ mode }) => {
     const base = env.VITE_BASE || "./"; // use relative paths by default for gh-pages
     return {
         base,
+        define: {
+            __APP_VERSION__: JSON.stringify(pkg.version),
+            __APP_BUILD__: JSON.stringify(buildNumber),
+        },
         plugins: [react()],
         resolve: {
             extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
