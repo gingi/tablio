@@ -3,6 +3,7 @@
 // Global compile-time constants injected via Vite define
 declare const __APP_VERSION__: string;
 declare const __APP_BUILD__: string;
+declare const __APP_COMMIT__: string;
 
 // (Optional) augment ImportMetaEnv if we want explicit constants later.
 // interface ImportMetaEnv {

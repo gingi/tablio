@@ -11,6 +11,7 @@ import { Separator } from "./ui/separator";
 import { toast } from "sonner@2.0.3";
 import { Toaster } from "./ui/sonner";
 import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { appVersion, appBuild, appCommit } from "../buildMeta";
 
 export interface Guest {
     id: string;
@@ -753,7 +754,7 @@ export function TablePlanner() {
                     )}
                     {!sidebarCollapsed && (
                         <span className="mr-2 text-[10px] uppercase tracking-wide text-muted-foreground whitespace-nowrap">
-                            v{__APP_VERSION__} (build {__APP_BUILD__})
+                            v{appVersion} ({appBuild}-{appCommit})
                         </span>
                     )}
                     <button
