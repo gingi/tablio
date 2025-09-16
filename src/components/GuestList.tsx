@@ -69,6 +69,7 @@ export function GuestList({
                                     variant="ghost"
                                     onClick={onClearSelection}
                                     className="h-6 w-6 p-0"
+                                    aria-label="Clear selection"
                                 >
                                     <X className="w-3 h-3" />
                                 </Button>
@@ -82,11 +83,12 @@ export function GuestList({
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-9"
+                                aria-label="Search unassigned guests"
                             />
                         </div>
 
                         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                            <SelectTrigger>
+                            <SelectTrigger title="Filter guests by category">
                                 <SelectValue placeholder="Filter by category" />
                             </SelectTrigger>
                             <SelectContent>

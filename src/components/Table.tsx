@@ -288,269 +288,299 @@ export function Table({
     const tableStatus = getTableStatus();
 
     return (
-        <div
-            ref={ref}
-            className={`absolute select-none transition-all ${
-                isDragging ? "opacity-50" : ""
-            } ${isSelected ? "z-20" : "z-10"}`}
-            style={{
-                left: table.x,
-                top: table.y,
-                transform: "translate(-50%, -50%)",
-            }}
-            onClick={() => onSelect(isSelected ? null : table.id)}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-        >
-            {/* Table surface - oval shape */}
+        <>
+            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events */}
             <div
-                className={`table-surface relative rounded-full border-3 transition-all ${
-                    isOver && canDrop
-                        ? "border-green-400 bg-green-100 shadow-lg scale-105"
-                        : isOver && !canDrop
-                            ? "border-red-400 bg-red-100"
-                            : isSelected
-                                ? "border-blue-500 shadow-md"
-                                : tableStatus.color
-                }`}
+                ref={ref}
+                className={`absolute select-none transition-all ${
+                    isDragging ? "opacity-50" : ""
+                } ${isSelected ? "z-20" : "z-10"}`}
                 style={{
-                    width: tableWidth,
-                    height: tableHeight,
+                    left: table.x,
+                    top: table.y,
+                    transform: "translate(-50%, -50%)",
                 }}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.closest('[data-no-select="true"]')) return;
+                    onSelect(isSelected ? null : table.id);
+                }}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onSelect(isSelected ? null : table.id);
+                    }
+                }}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
             >
-                {/* Drag handle removed from inside; now rendered after seats for higher stacking */}
-                {/* Table name and info */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                    {isEditing ? (
-                        <form
-                            className="pointer-events-auto flex items-center gap-1 mb-1"
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                handleNameSave();
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <Input
-                                ref={inputRef}
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                onBlur={handleNameSave}
-                                className="w-24 h-6 text-xs text-center px-1"
-                            />
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                type="submit"
-                                className="w-4 h-4 p-0"
+                {/* Table surface - oval shape */}
+                <div
+                    className={`table-surface relative rounded-full border-3 transition-all ${
+                        isOver && canDrop
+                            ? "border-green-400 bg-green-100 shadow-lg scale-105"
+                            : isOver && !canDrop
+                                ? "border-red-400 bg-red-100"
+                                : isSelected
+                                    ? "border-blue-500 shadow-md"
+                                    : tableStatus.color
+                    }`}
+                    style={{
+                        width: tableWidth,
+                        height: tableHeight,
+                    }}
+                >
+                    {/* Drag handle removed from inside; now rendered after seats for higher stacking */}
+                    {/* Table name and info */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                        {isEditing ? (
+                            <form
+                                className="pointer-events-auto flex items-center gap-1 mb-1"
+                                data-no-select="true"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleNameSave();
+                                }}
                             >
-                                <Check className="w-3 h-3" />
-                            </Button>
-                        </form>
-                    ) : (
-                        <div
-                            className="pointer-events-auto flex items-center gap-1 mb-1 group"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <button
-                                type="button"
-                                className="font-medium text-sm focus:outline-none"
-                                onClick={(e) => handleNameEdit(e)}
-                            >
-                                {table.name}
-                            </button>
-                            {isSelected && (
+                                <Input
+                                    ref={inputRef}
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    onBlur={handleNameSave}
+                                    className="w-24 h-6 text-xs text-center px-1"
+                                />
                                 <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="w-4 h-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={(e: React.MouseEvent) => handleNameEdit(e)}
+                                    type="submit"
+                                    className="w-4 h-4 p-0"
+                                    data-no-select="true"
                                 >
-                                    <Edit2 className="w-3 h-3" />
+                                    <Check className="w-3 h-3" />
                                 </Button>
-                            )}
-                        </div>
-                    )}
+                            </form>
+                        ) : (
+                            <div
+                                className="pointer-events-auto flex items-center gap-1 mb-1 group"
+                                role="group"
+                                data-no-select="true"
+                            >
+                                <button
+                                    type="button"
+                                    className="font-medium text-sm focus:outline-none"
+                                    onClick={(e) => handleNameEdit(e)}
+                                    data-no-select="true"
+                                >
+                                    {table.name}
+                                </button>
+                                {isSelected && (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="w-4 h-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={(e: React.MouseEvent) => handleNameEdit(e)}
+                                        data-no-select="true"
+                                    >
+                                        <Edit2 className="w-3 h-3" />
+                                    </Button>
+                                )}
+                            </div>
+                        )}
 
-                    {/* Status badge */}
-                    <Badge
-                        className={`text-xs border ${
-                            tableStatus.badgeClass ||
+                        {/* Status badge */}
+                        <Badge
+                            className={`text-xs border ${
+                                tableStatus.badgeClass ||
                             (tableStatus.badge === "secondary"
                                 ? "bg-gray-100 text-gray-600 border-gray-300"
                                 : tableStatus.badge === "destructive"
                                     ? "bg-red-100 text-red-800 border-red-300"
                                     : "")
-                        }`}
-                    >
-                        {tableStatus.text}
-                    </Badge>
-
-                    {/* Drag feedback */}
-                    {isOver && (
-                        <Badge variant="default" className="text-xs mt-1 bg-green-600">
-                            Drop here to assign
+                            }`}
+                        >
+                            {tableStatus.text}
                         </Badge>
-                    )}
-                </div>
 
-                {/* Info button */}
-                {table.guests.length > 0 && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="absolute -top-2 -right-12 w-6 h-6 rounded-full p-0 pointer-events-auto bg-white hover:bg-blue-50 border-blue-200 hover:border-blue-300"
-                        onClick={(e: React.MouseEvent) => {
-                            e.stopPropagation();
-                            setShowInfoDialog(true);
-                        }}
-                        title="View table guests"
-                    >
-                        <Info className="w-3 h-3 text-blue-600" />
-                    </Button>
-                )}
-
-                {/* Central overlay controls (remove + drag) */}
-                {isSelected && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="flex gap-2 pointer-events-auto bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
-                            <Button
-                                size="sm"
-                                variant="destructive"
-                                className="w-6 h-6 p-0"
-                                onClick={(e: React.MouseEvent) => {
-                                    e.stopPropagation();
-                                    setShowRemoveConfirm(true);
-                                }}
-                                title="Remove table"
-                            >
-                                <X className="w-3 h-3" />
-                            </Button>
-                            <div
-                                ref={dragHandleRef}
-                                draggable
-                                onDragStart={handleTableDragStart}
-                                onDragEnd={handleTableDragEnd}
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center gap-1 cursor-grab active:cursor-grabbing select-none text-[10px] font-medium px-2 h-6 rounded-full border bg-white shadow-sm"
-                                title="Drag to move"
-                            >
-                                <Move className="w-3 h-3" /> Move
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-            </div>
-
-            {/* Seats */}
-            {seatPositions.map((pos, index) => {
-                const guest = table.guests[index];
-
-                const handleSeatDragStart = (e: React.DragEvent) => {
-                    if (guest) {
-                        e.dataTransfer.setData(
-                            "application/json",
-                            JSON.stringify({
-                                type: "guest",
-                                ids: [guest.id],
-                                isMultiple: false,
-                                primaryId: guest.id,
-                            })
-                        );
-                        e.dataTransfer.effectAllowed = "move";
-                    }
-                };
-
-                return (
-                    <div
-                        key={index}
-                        className={`absolute w-12 h-12 rounded-full border flex items-center justify-center text-[10px] font-medium transition-all cursor-pointer hover:scale-110 z-20 ${
-                            guest
-                                ? "bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200 cursor-grab active:cursor-grabbing"
-                                : "bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200"
-                        }`}
-                        style={{
-                            left: tableWidth / 2 + pos.x - seatRadius,
-                            top: tableHeight / 2 + pos.y - seatRadius,
-                        }}
-                        title={guest ? guest.name : `Seat ${index + 1}`}
-                        onClick={(e) => handleSeatClick(e, index)}
-                        draggable={!!guest}
-                        onDragStart={handleSeatDragStart}
-                    >
-                        {guest ? (
-                            <div className="w-full h-full rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold leading-tight px-1">
-                                <div className="text-center truncate max-w-full">
-                                    {getFirstNameLastInitial(guest.name)}
-                                </div>
-                            </div>
-                        ) : (
-                            <div>{index + 1}</div>
+                        {/* Drag feedback */}
+                        {isOver && (
+                            <Badge variant="default" className="text-xs mt-1 bg-green-600">
+                            Drop here to assign
+                            </Badge>
                         )}
                     </div>
-                );
-            })}
 
-            {/* Remove confirmation dialog (lightweight inline) */}
-            {showRemoveConfirm && isSelected && (
-                <div className="absolute inset-0 flex items-center justify-center z-50" onClick={(e) => e.stopPropagation()}>
-                    <div className="bg-white border rounded-md shadow-md p-3 w-44 space-y-2">
-                        <div className="text-xs font-medium text-center">
-                            Remove this table?
+                    {/* Info button */}
+                    {table.guests.length > 0 && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="absolute -top-2 -right-12 w-6 h-6 rounded-full p-0 pointer-events-auto bg-white hover:bg-blue-50 border-blue-200 hover:border-blue-300"
+                            onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                setShowInfoDialog(true);
+                            }}
+                            title="View table guests"
+                        >
+                            <Info className="w-3 h-3 text-blue-600" />
+                        </Button>
+                    )}
+
+                    {/* Central overlay controls (remove + drag) */}
+                    {isSelected && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="flex gap-2 pointer-events-auto bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
+                                <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="w-6 h-6 p-0"
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        setShowRemoveConfirm(true);
+                                    }}
+                                    title="Remove table"
+                                >
+                                    <X className="w-3 h-3" />
+                                </Button>
+                                <div
+                                    ref={dragHandleRef}
+                                    draggable
+                                    onDragStart={handleTableDragStart}
+                                    onDragEnd={handleTableDragEnd}
+                                    className="flex items-center gap-1 cursor-grab active:cursor-grabbing select-none text-[10px] font-medium px-2 h-6 rounded-full border bg-white shadow-sm"
+                                    title="Drag to move"
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                            e.preventDefault();
+                                        // no click action here other than editing; keep stopPropagation
+                                        }
+                                    }}
+                                    aria-label="Drag table"
+                                >
+                                    <Move className="w-3 h-3" /> Move
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex gap-2 justify-center">
-                            <Button
-                                size="sm"
-                                variant="destructive"
-                                className="h-6 text-xs"
-                                onClick={(e: React.MouseEvent) => {
-                                    e.stopPropagation();
-                                    onRemoveTable(table.id);
-                                    setShowRemoveConfirm(false);
-                                }}
-                            >
+                    )}
+
+                </div>
+
+                {/* Seats */}
+                {seatPositions.map((pos, index) => {
+                    const guest = table.guests[index];
+
+                    const handleSeatDragStart = (e: React.DragEvent) => {
+                        if (guest) {
+                            e.dataTransfer.setData(
+                                "application/json",
+                                JSON.stringify({
+                                    type: "guest",
+                                    ids: [guest.id],
+                                    isMultiple: false,
+                                    primaryId: guest.id,
+                                })
+                            );
+                            e.dataTransfer.effectAllowed = "move";
+                        }
+                    };
+
+                    return (
+                        <button
+                            key={index}
+                            type="button"
+                            className={`absolute w-12 h-12 rounded-full border flex items-center justify-center text-[10px] font-medium transition-all cursor-pointer hover:scale-110 z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
+                                guest
+                                    ? "bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200 cursor-grab active:cursor-grabbing"
+                                    : "bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200"
+                            }`}
+                            style={{
+                                left: tableWidth / 2 + pos.x - seatRadius,
+                                top: tableHeight / 2 + pos.y - seatRadius,
+                            }}
+                            title={guest ? guest.name : `Seat ${index + 1}`}
+                            onClick={(e) => handleSeatClick(e, index)}
+                            draggable={!!guest}
+                            onDragStart={handleSeatDragStart}
+                            aria-label={guest ? `${guest.name} seat ${index + 1}` : `Empty seat ${index + 1}`}
+                        >
+                            {guest ? (
+                                <div className="w-full h-full rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold leading-tight px-1">
+                                    <div className="text-center truncate max-w-full">
+                                        {getFirstNameLastInitial(guest.name)}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>{index + 1}</div>
+                            )}
+                        </button>
+                    );
+                })}
+
+                {/* Remove confirmation dialog (lightweight inline) */}
+                {showRemoveConfirm && isSelected && (
+                    <div className="absolute inset-0 flex items-center justify-center z-50" role="alertdialog" aria-modal="true" aria-labelledby={`remove-table-${table.id}`}> 
+                        <div className="bg-white border rounded-md shadow-md p-3 w-44 space-y-2">
+                            <div id={`remove-table-${table.id}`} className="text-xs font-medium text-center">
+                            Remove this table?
+                            </div>
+                            <div className="flex gap-2 justify-center">
+                                <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="h-6 text-xs"
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        onRemoveTable(table.id);
+                                        setShowRemoveConfirm(false);
+                                    }}
+                                >
                                 Remove
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 text-xs"
-                                onClick={(e: React.MouseEvent) => {
-                                    e.stopPropagation();
-                                    setShowRemoveConfirm(false);
-                                }}
-                            >
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 text-xs"
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        setShowRemoveConfirm(false);
+                                    }}
+                                >
                                 Cancel
-                            </Button>
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Seat Context Menu */}
-            <SeatContextMenu
-                isOpen={contextMenu.isOpen}
-                position={contextMenu.position}
-                seatNumber={contextMenu.seatNumber}
-                currentGuest={contextMenu.currentGuest}
-                allGuests={allGuests}
-                allTables={allTables}
-                onClose={handleContextMenuClose}
-                onAssignGuest={handleAssignGuestToSeat}
-                onRemoveGuest={handleRemoveGuestFromSeat}
-                currentTableName={table.id}
-            />
+                {/* Seat Context Menu */}
+                <SeatContextMenu
+                    isOpen={contextMenu.isOpen}
+                    position={contextMenu.position}
+                    seatNumber={contextMenu.seatNumber}
+                    currentGuest={contextMenu.currentGuest}
+                    allGuests={allGuests}
+                    allTables={allTables}
+                    onClose={handleContextMenuClose}
+                    onAssignGuest={handleAssignGuestToSeat}
+                    onRemoveGuest={handleRemoveGuestFromSeat}
+                    currentTableName={table.id}
+                />
 
-            {/* Table Info Dialog */}
-            <TableInfoDialog
-                isOpen={showInfoDialog}
-                onClose={() => setShowInfoDialog(false)}
-                table={table}
-                onRemoveGuest={onRemoveGuest}
-                onReorderGuests={(ordered) => onReorderGuests(table.id, ordered)}
-            />
-        </div>
+                {/* Table Info Dialog */}
+                <TableInfoDialog
+                    isOpen={showInfoDialog}
+                    onClose={() => setShowInfoDialog(false)}
+                    table={table}
+                    onRemoveGuest={onRemoveGuest}
+                    onReorderGuests={(ordered) => onReorderGuests(table.id, ordered)}
+                />
+            </div>
+        </>
     );
 }

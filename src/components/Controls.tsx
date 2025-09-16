@@ -144,9 +144,9 @@ export function Controls({
 
             <div className="space-y-3 mt-3">
                 <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">
+                    <div className="text-sm text-muted-foreground mb-2">
                         Quick Actions
-                    </label>
+                    </div>
                     <div className="space-y-2">
                         <Button
                             variant="outline"
@@ -214,9 +214,9 @@ export function Controls({
                 <Separator />
 
                 <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">
+                    <div className="text-sm text-muted-foreground mb-2">
                         Add New Table
-                    </label>
+                    </div>
                     <Button
                         variant="outline"
                         size="sm"
@@ -229,7 +229,7 @@ export function Controls({
                 </div>
 
                 <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Layout Tools</label>
+                    <div className="text-sm text-muted-foreground mb-2">Layout Tools</div>
                     <Button
                         variant="outline"
                         size="sm"
@@ -250,7 +250,7 @@ export function Controls({
                 <Separator />
 
                 <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Export Data</label>
+                    <div className="text-sm text-muted-foreground mb-2">Export Data</div>
                     <div className="space-y-2">
                         <Button
                             variant="default"
@@ -280,15 +280,17 @@ export function Controls({
                 </div>
 
                 <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">
+                    <div className="text-sm text-muted-foreground mb-2">
                         Import Layout
-                    </label>
+                    </div>
                     <input
                         ref={fileInputRef}
                         type="file"
                         accept=".json"
                         onChange={handleImportLayout}
                         className="hidden"
+                        tabIndex={-1}
+                        aria-hidden="true"
                     />
                     <Button
                         variant="outline"

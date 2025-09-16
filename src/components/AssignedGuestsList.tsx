@@ -94,6 +94,7 @@ export function AssignedGuestsList({ guests, tables, defaultOpen = false }: Assi
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-9"
+                                aria-label="Search assigned guests"
                             />
                         </div>
 

@@ -875,6 +875,7 @@ export function TablePlanner() {
                         onClick={handleZoomOut}
                         disabled={zoom <= 0.3}
                         className="h-8 w-8 p-0"
+                        aria-label="Zoom out"
                     >
                         <ZoomOutIcon className="h-4 w-4" />
                     </Button>
@@ -883,6 +884,7 @@ export function TablePlanner() {
                         variant="ghost"
                         onClick={handleZoomReset}
                         className="h-8 px-2 min-w-[50px] text-xs"
+                        aria-label="Reset zoom"
                     >
                         {Math.round(zoom * 100)}%
                     </Button>
@@ -892,6 +894,7 @@ export function TablePlanner() {
                         onClick={handleZoomIn}
                         disabled={zoom >= 2}
                         className="h-8 w-8 p-0"
+                        aria-label="Zoom in"
                     >
                         <ZoomInIcon className="h-4 w-4" />
                     </Button>

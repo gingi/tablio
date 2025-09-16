@@ -79,7 +79,6 @@ export function GuestForm({ onAddGuest, tables = [] }: GuestFormProps) {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Enter guest name"
-                                autoFocus
                                 required
                             />
                         </div>

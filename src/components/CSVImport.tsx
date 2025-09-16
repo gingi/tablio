@@ -130,9 +130,7 @@ export function CSVImport({ onImport }: CSVImportProps) {
     return (
         <div className="space-y-3">
             <div>
-                <label className="text-sm text-muted-foreground mb-2 block">
-                    Import Guest List
-                </label>
+                <div className="text-sm text-muted-foreground mb-2">Import Guest List</div>
                 <Card className="p-4">
                     <div className="space-y-3">
                         <div className="text-center">
@@ -166,6 +164,8 @@ export function CSVImport({ onImport }: CSVImportProps) {
                             accept=".csv"
                             onChange={handleFileSelect}
                             className="hidden"
+                            tabIndex={-1}
+                            aria-hidden="true"
                         />
 
                         {importResult && (

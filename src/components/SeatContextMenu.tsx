@@ -80,20 +80,22 @@ export function SeatContextMenu({
         new Set(allGuests.map((g) => g.category).filter(Boolean))
     ) as string[];
 
-    const handleClickOutside = (e: React.MouseEvent) => {
-        if (e.target === e.currentTarget) {
-            onClose();
-        }
-    };
 
     // Use a portal so z-index is not constrained by table container (which has transform)
+    // Dialog root with explicit overlay close button (semantic interactive element)
     const portalContent = (
         <div
-            className="fixed inset-0 z-[100] bg-black/20"
-            onClick={handleClickOutside}
+            className="fixed inset-0 z-[100]"
             role="dialog"
             aria-modal="true"
+            aria-label={`Seat ${seatNumber} assignment menu`}
         >
+            <button
+                type="button"
+                aria-label="Close"
+                className="absolute inset-0 bg-black/20 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                onClick={onClose}
+            />
             <Card
                 className="absolute bg-white shadow-xl border w-80"
                 style={{
@@ -107,10 +109,10 @@ export function SeatContextMenu({
                     ),
                 }}
             >
-                <div className="p-4">
+                <div className="p-4 relative">
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="font-medium">Seat {seatNumber}</h3>
-                        <Button size="sm" variant="ghost" className="w-6 h-6 p-0" onClick={onClose}>
+                        <Button size="sm" variant="ghost" className="w-6 h-6 p-0" onClick={onClose} aria-label="Close menu">
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
@@ -152,6 +154,7 @@ export function SeatContextMenu({
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-9 h-8"
+                                    aria-label="Search guests"
                                 />
                             </div>
 
@@ -182,9 +185,10 @@ export function SeatContextMenu({
                                     </div>
                                 ) : (
                                     filteredGuests.map((guest) => (
-                                        <div
+                                        <button
                                             key={guest.id}
-                                            className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors ${
+                                            type="button"
+                                            className={`flex w-full text-left items-center justify-between p-2 rounded-lg border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                                                 guest.id === currentGuest?.id
                                                     ? "bg-blue-100 border-blue-300"
                                                     : "hover:bg-gray-50 border-transparent"
@@ -195,6 +199,7 @@ export function SeatContextMenu({
                                                     onClose();
                                                 }
                                             }}
+                                            aria-current={guest.id === currentGuest?.id ? "true" : undefined}
                                         >
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-sm font-medium truncate">
@@ -222,7 +227,7 @@ export function SeatContextMenu({
                                             {guest.id === currentGuest?.id && (
                                                 <User className="w-4 h-4 text-blue-600 ml-2" />
                                             )}
-                                        </div>
+                                        </button>
                                     ))
                                 )}
                             </div>
