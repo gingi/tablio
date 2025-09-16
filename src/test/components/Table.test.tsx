@@ -37,6 +37,7 @@ describe("Table", () => {
                 onRemoveTable={noop}
                 onMoveTable={noop}
                 onRenameTable={noop}
+                onReorderGuests={noop}
             />
         );
         expect(screen.getByText("0/12")).toBeInTheDocument();
@@ -57,6 +58,7 @@ describe("Table", () => {
                 onRemoveTable={noop}
                 onMoveTable={noop}
                 onRenameTable={noop}
+                onReorderGuests={noop}
             />
         );
         expect(screen.getByText("12/12")).toBeInTheDocument();
