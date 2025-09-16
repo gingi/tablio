@@ -121,6 +121,7 @@ export function TableInfoDialog({ isOpen, onClose, table, onRemoveGuest, onReord
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange} aria-describedby={`table-${table.id}-desc`}>
             <DialogContent
+                hideClose
                 className="max-w-md"
                 onPointerDownOutside={(e) => { if (draggingRef.current) e.preventDefault(); }}
                 onInteractOutside={(e) => { if (draggingRef.current) e.preventDefault(); }}
@@ -133,7 +134,7 @@ export function TableInfoDialog({ isOpen, onClose, table, onRemoveGuest, onReord
             >
                 <DialogHeader className="pr-8">
                     <DialogTitle className="flex items-center gap-2">
-                        <Users className="w-5 h-5" />
+                        <Users className="w-5 h-5 translate-y-[1px]" />
                         {table.name}
                     </DialogTitle>
                     <p id={`table-${table.id}-desc`} className="sr-only">

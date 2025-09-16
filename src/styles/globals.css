@@ -187,3 +187,60 @@
 html {
     font-size: var(--font-size);
 }
+
+/* Collapsible animations */
+@keyframes slideDownFade {
+    from { height: 0; opacity: 0; }
+    to { height: var(--radix-collapsible-content-height); opacity: 1; }
+}
+@keyframes slideUpFade {
+    from { height: var(--radix-collapsible-content-height); opacity: 1; }
+    to { height: 0; opacity: 0; }
+}
+.collapsible-anim[data-state="open"] {
+    animation: slideDownFade 180ms cubic-bezier(.32,.72,0,1) forwards;
+    overflow: hidden;
+}
+.collapsible-anim[data-state="closed"] {
+    animation: slideUpFade 160ms cubic-bezier(.32,.72,0,1) forwards;
+    overflow: hidden;
+}
+
+/* Guest card fade-in */
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.card-fade-in { animation: cardIn 200ms ease forwards; }
+
+/* Sidebar scrollbar: hidden by default, appears on hover or while actively scrolling */
+/* Sidebar scrollbar: fully hidden (no width) until hover or scrolling */
+.sidebar-scrollbar {
+    scrollbar-width: none; /* Firefox hide */
+    --sb-thumb: rgba(0,0,0,0.35);
+    --sb-transition: 160ms ease;
+}
+.sidebar-scrollbar:hover,
+.sidebar-scrollbar.scrolling {
+    scrollbar-width: thin; /* show in Firefox */
+}
+.sidebar-scrollbar::-webkit-scrollbar {
+    width: 0; /* hide in WebKit */
+    height: 0;
+}
+.sidebar-scrollbar:hover::-webkit-scrollbar,
+.sidebar-scrollbar.scrolling::-webkit-scrollbar {
+    width: 8px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--sb-thumb);
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity var(--sb-transition), background var(--sb-transition);
+}
+.sidebar-scrollbar:hover::-webkit-scrollbar-thumb,
+.sidebar-scrollbar.scrolling::-webkit-scrollbar-thumb {
+    opacity: 1;
+}
+

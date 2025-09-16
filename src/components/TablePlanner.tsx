@@ -807,7 +807,7 @@ export function TablePlanner() {
                     </button>
                 </div>
 
-                <div className={`flex-1 overflow-y-auto flex flex-col ${sidebarCollapsed ? "opacity-0 pointer-events-none select-none" : "opacity-100"} transition-opacity duration-200`}>
+                <div id="sidebar-scroll" className={`flex-1 overflow-y-auto sidebar-scrollbar flex flex-col ${sidebarCollapsed ? "opacity-0 pointer-events-none select-none" : "opacity-100"} transition-opacity duration-200`}>
                     {!sidebarCollapsed && (
                         <div className="flex flex-col flex-1">{/* scrollable content */}
                             <Summary
@@ -830,7 +830,7 @@ export function TablePlanner() {
                             <Separator />
                             <GuestForm onAddGuest={addGuest} tables={tables} />
                             <Separator />
-                            <AssignedGuestsList guests={assignedGuests} tables={tables} />
+                            <AssignedGuestsList guests={assignedGuests} tables={tables} defaultOpen={false} />
                             <GuestList
                                 guests={unassignedGuests}
                                 selectedGuests={selectedGuests}

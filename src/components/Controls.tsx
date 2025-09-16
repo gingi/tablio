@@ -1,9 +1,8 @@
 import React, { useRef, useState } from "react";
 import { TableData, Guest } from "./TablePlanner";
 import { Button } from "./ui/button";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { PlusIcon as Plus, UsersIcon as Users, DownloadIcon as Download, SaveIcon as Save, FolderOpenIcon as FolderOpen, Grid3X3Icon as Grid3X3, UndoIcon as Undo, RotateCcwIcon as RotateCcw } from "./icons";
+import { PlusIcon as Plus, DownloadIcon as Download, SaveIcon as Save, FolderOpenIcon as FolderOpen, Grid3X3Icon as Grid3X3, UndoIcon as Undo, RotateCcwIcon as RotateCcw } from "./icons";
+import { toast } from "sonner@2.0.3";
 import { CSVImport } from "./CSVImport";
 import { Separator } from "./ui/separator";
 
@@ -32,6 +31,7 @@ export function Controls({
 }: ControlsProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
+
     const exportAssignments = () => {
         const assignments: { name: string; table: string }[] = [];
 
@@ -62,7 +62,7 @@ export function Controls({
         URL.revokeObjectURL(url);
     };
 
-    const exportCompleteData = () => {
+    const exportCompleteData = async () => {
         const completeData = {
             guests,
             tables,
@@ -72,14 +72,45 @@ export function Controls({
 
         const jsonContent = JSON.stringify(completeData, null, 2);
         const blob = new Blob([jsonContent], { type: "application/json" });
+
+        // Try File System Access API for native Save As dialog
+        interface SavePickerTypeEntry { description?: string; accept: Record<string, string[]> }
+        interface SavePickerOptions { suggestedName?: string; types?: SavePickerTypeEntry[] }
+        interface WritableFile { write: (data: Blob) => Promise<void>; close: () => Promise<void> }
+        interface FileHandle { createWritable: () => Promise<WritableFile> }
+        const w = window as unknown as { showSaveFilePicker?: (options: SavePickerOptions) => Promise<FileHandle> };
+        if (typeof w.showSaveFilePicker === "function") {
+            try {
+                const handle = await w.showSaveFilePicker({
+                    suggestedName: "tablio.json",
+                    types: [
+                        {
+                            description: "Tablio Layout",
+                            accept: { "application/json": [".json"] },
+                        },
+                    ],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                toast.success("Layout exported");
+                return;
+            } catch (err) {
+                if ((err as { name?: string })?.name === "AbortError") return; // user canceled
+                console.warn("showSaveFilePicker failed, falling back", err);
+            }
+        }
+
+        // Fallback: anchor download with default filename
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `event-layout-${new Date().toISOString().split("T")[0]}.json`;
+        a.download = "tablio.json";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        toast.success("Layout downloaded");
     };
 
     const handleImportLayout = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -273,44 +304,6 @@ export function Controls({
                     </div>
                 </div>
 
-                <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">
-                        Current Tables
-                    </label>
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                        {tables.length === 0 ? (
-                            <div className="text-xs text-muted-foreground italic">
-                                No tables added yet
-                            </div>
-                        ) : (
-                            tables.map((table) => (
-                                <Card key={table.id} className="p-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Users className="w-3 h-3 text-muted-foreground" />
-                                            <span className="text-sm">{table.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Badge
-                                                className={`text-xs border ${
-                                                    table.guests.length === 0
-                                                        ? "bg-gray-100 text-gray-600 border-gray-300"
-                                                        : table.guests.length < 8
-                                                            ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                                                            : table.guests.length <= 12
-                                                                ? "bg-green-100 text-green-800 border-green-300"
-                                                                : "bg-red-100 text-red-800 border-red-300"
-                                                }`}
-                                            >
-                                                {table.guests.length}/12
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </Card>
-                            ))
-                        )}
-                    </div>
-                </div>
             </div>
         </div>
     );

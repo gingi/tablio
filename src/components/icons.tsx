@@ -46,7 +46,10 @@ export const ChevronRightIcon = create(2, <polyline points="9 18 15 12 9 6" />);
 export const ChevronDownIcon = create(2, <polyline points="6 9 12 15 18 9" />);
 export const ChevronUpIcon = create(2, <polyline points="18 15 12 9 6 15" />);
 
-export const XIcon = create(2, <line x1="18" y1="6" x2="6" y2="18" />, "0 0 24 24");
+export const XIcon = create(2, <>
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+</>, "0 0 24 24");
 
 export const SearchIcon = create(2, <>
     <circle cx="11" cy="11" r="8" />
