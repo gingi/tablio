@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-import { Search, X, ChevronDown, ChevronRight } from "lucide-react";
+import { SearchIcon as Search, XIcon as X, ChevronDownIcon as ChevronDown, ChevronRightIcon as ChevronRight } from "./icons";
 
 interface GuestListProps {
     guests: Guest[];
@@ -59,7 +59,7 @@ export function GuestList({
                     </Button>
                 </CollapsibleTrigger>
 
-                <CollapsibleContent>
+                <CollapsibleContent className="collapsible-anim">
                     <div className="px-4 pb-4 space-y-2">
                         {selectedGuests.size > 0 && (
                             <div className="flex items-center justify-between">
@@ -107,14 +107,15 @@ export function GuestList({
                             </div>
                         ) : (
                             filteredGuests.map((guest) => (
-                                <GuestCard
-                                    key={guest.id}
-                                    guest={guest}
-                                    isSelected={selectedGuests.has(guest.id)}
-                                    selectedCount={selectedGuests.size}
-                                    selectedGuestIds={Array.from(selectedGuests)}
-                                    onToggleSelection={onToggleSelection}
-                                />
+                                <div key={guest.id} className="card-fade-in">
+                                    <GuestCard
+                                        guest={guest}
+                                        isSelected={selectedGuests.has(guest.id)}
+                                        selectedCount={selectedGuests.size}
+                                        selectedGuestIds={Array.from(selectedGuests)}
+                                        onToggleSelection={onToggleSelection}
+                                    />
+                                </div>
                             ))
                         )}
                     </div>

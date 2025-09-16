@@ -4,7 +4,7 @@ import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Plus } from "lucide-react";
+import { PlusIcon as Plus } from "./icons";
 import { Badge } from "./ui/badge";
 import { TableData } from "./TablePlanner";
 

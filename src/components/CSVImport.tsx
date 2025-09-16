@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
-import { Upload, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { UploadIcon as Upload, FileTextIcon as FileText, CheckCircleIcon as CheckCircle, AlertCircleIcon as AlertCircle } from "./icons";
 import { Guest } from "./TablePlanner";
 
 interface CSVImportProps {

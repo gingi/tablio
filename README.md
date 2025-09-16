@@ -89,4 +89,4 @@ PRs welcome: keep changes focused, run `npm test` + `npm run lint` before submit
 
 ## License
 
-Currently unlicensed (all rights reserved). Add a LICENSE file before public redistribution.
+Released under the MIT License – see the `LICENSE` file for details.

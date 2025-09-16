@@ -1,16 +1,24 @@
 "use client";
 
 import * as React from "react";
-import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react@8.6.0";
-import { ArrowLeft, ArrowRight } from "lucide-react@0.487.0";
+import useEmblaCarouselLib from "embla-carousel-react@8.6.0";
+import { ChevronLeftIcon as ArrowLeft, ChevronRightIcon as ArrowRight } from "../icons";
 
 import { cn } from "./utils";
 import { Button } from "./button";
 
-type CarouselApi = UseEmblaCarouselType[1];
-type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;
-type CarouselOptions = UseCarouselParameters[0];
-type CarouselPlugin = UseCarouselParameters[1];
+// Treat Embla types loosely to avoid versioned module inference issues.
+// We only need an API with the methods we call.
+interface CarouselApi {
+    canScrollPrev: () => boolean;
+    canScrollNext: () => boolean;
+    scrollPrev: () => void;
+    scrollNext: () => void;
+    on: (evt: string, cb: (api: CarouselApi) => void) => void;
+    off: (evt: string, cb: (api: CarouselApi) => void) => void;
+}
+type CarouselOptions = Record<string, unknown> | undefined;
+type CarouselPlugin = unknown;
 
 interface CarouselProps {
     opts?: CarouselOptions;
@@ -20,8 +28,8 @@ interface CarouselProps {
 }
 
 type CarouselContextProps = {
-    carouselRef: ReturnType<typeof useEmblaCarousel>[0];
-    api: ReturnType<typeof useEmblaCarousel>[1];
+    carouselRef: (node: HTMLElement | null) => void;
+    api: CarouselApi | undefined;
     scrollPrev: () => void;
     scrollNext: () => void;
     canScrollPrev: boolean;
@@ -49,6 +57,10 @@ function Carousel({
     children,
     ...props
 }: React.ComponentProps<"div"> & CarouselProps) {
+    const useEmblaCarousel = useEmblaCarouselLib as unknown as (
+        options?: CarouselOptions,
+        plugins?: CarouselPlugin
+    ) => [(node: HTMLElement | null) => void, CarouselApi | undefined];
     const [carouselRef, api] = useEmblaCarousel(
         {
             ...opts,
@@ -108,7 +120,7 @@ function Carousel({
                 carouselRef,
                 api: api,
                 opts,
-                orientation: orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
+                orientation: orientation,
                 scrollPrev,
                 scrollNext,
                 canScrollPrev,

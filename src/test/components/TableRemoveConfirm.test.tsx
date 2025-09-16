@@ -30,6 +30,7 @@ describe("Table remove confirmation", () => {
                 onRemoveTable={onRemoveTable}
                 onMoveTable={noop}
                 onRenameTable={noop}
+                onReorderGuests={noop}
             />
         );
 

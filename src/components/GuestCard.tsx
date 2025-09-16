@@ -3,7 +3,7 @@ import { Guest } from "./TablePlanner";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { GripVertical } from "lucide-react";
+import { GripVerticalIcon as GripVertical } from "./icons";
 
 interface GuestCardProps {
     guest: Guest;

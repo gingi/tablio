@@ -3,15 +3,25 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import fs from "fs";
+import { execSync } from "child_process";
 
 const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, "package.json"), "utf-8"));
-let buildNumber = 0;
-try {
-    const buildMeta = JSON.parse(fs.readFileSync(path.resolve(__dirname, "build-number.json"), "utf-8"));
-    buildNumber = buildMeta.build ?? 0;
-} catch (e) {
-    // ignore if missing
+
+function safeExec(cmd: string): string | null {
+    try {
+        return execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    } catch {
+        return null;
+    }
 }
+
+// Derive commit SHA
+const shortSha = safeExec("git rev-parse --short HEAD") || "dev";
+
+// Build id strategy:
+// CI: use APP_BUILD env (runNumber-shortSha)
+// Local: 'dev'
+const compositeBuild = process.env.APP_BUILD || (process.env.CI ? `ci-${shortSha}` : "dev");
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), "VITE_");
@@ -21,7 +31,8 @@ export default defineConfig(({ mode }) => {
         base,
         define: {
             __APP_VERSION__: JSON.stringify(pkg.version),
-            __APP_BUILD__: JSON.stringify(buildNumber),
+            __APP_BUILD__: JSON.stringify(compositeBuild),
+            __APP_COMMIT__: JSON.stringify(shortSha),
         },
         plugins: [react()],
         resolve: {
@@ -34,7 +45,6 @@ export default defineConfig(({ mode }) => {
                 "react-hook-form@7.55.0": "react-hook-form",
                 "react-day-picker@8.10.1": "react-day-picker",
                 "next-themes@0.4.6": "next-themes",
-                "lucide-react@0.487.0": "lucide-react",
                 "input-otp@1.4.2": "input-otp",
                 "embla-carousel-react@8.6.0": "embla-carousel-react",
                 "cmdk@1.1.1": "cmdk",
@@ -78,6 +88,8 @@ export default defineConfig(({ mode }) => {
         },
         test: {
             environment: "jsdom",
+            globals: true,
+            setupFiles: ["./src/test/setup.ts"],
         },
     };
 });

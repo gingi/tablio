@@ -10,7 +10,8 @@ import { Card } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { toast } from "sonner@2.0.3";
 import { Toaster } from "./ui/sonner";
-import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { ZoomInIcon, ZoomOutIcon, ChevronLeftIcon, ChevronRightIcon } from "./icons";
+import { appVersion, appBuild, appCommit } from "../buildMeta";
 
 export interface Guest {
     id: string;
@@ -510,6 +511,47 @@ export function TablePlanner() {
         [tables, removeGuestFromTableInternal, guests, addToHistory]
     );
 
+    // Reorder guests within a table (drag reorder inside TableInfoDialog)
+    const reorderGuestsInTable = useCallback(
+        (tableId: string, orderedGuestIds: string[]) => {
+            const table = tables.find((t) => t.id === tableId);
+            if (!table) return;
+            // Only proceed if there is an actual change
+            const currentIds = table.guests.map((g) => g.id);
+            if (currentIds.length === orderedGuestIds.length && currentIds.every((v, i) => v === orderedGuestIds[i])) {
+                return;
+            }
+
+            addToHistory("Reorder guests", guests, tables);
+
+            setTables((prev) =>
+                prev.map((t) => {
+                    if (t.id !== tableId) return t;
+                    // Rebuild guests array in new order, updating seatNumber sequentially
+                    const guestMap = new Map(t.guests.map((g) => [g.id, g] as const));
+                    const reordered: Guest[] = [];
+                    orderedGuestIds.forEach((id, idx) => {
+                        const g = guestMap.get(id);
+                        if (g) reordered.push({ ...g, seatNumber: idx });
+                    });
+                    return { ...t, guests: reordered };
+                })
+            );
+
+            // Update global guests seatNumber for those at this table
+            setGuests((prev) =>
+                prev.map((g) => {
+                    if (g.tableId === tableId) {
+                        const newIndex = orderedGuestIds.indexOf(g.id);
+                        if (newIndex !== -1) return { ...g, seatNumber: newIndex };
+                    }
+                    return g;
+                })
+            );
+        },
+        [tables, guests, addToHistory]
+    );
+
     const moveTable = useCallback((tableId: string, x: number, y: number) => {
         setTables((prev) =>
             prev.map((table) => (table.id === tableId ? { ...table, x, y } : table))
@@ -702,6 +744,7 @@ export function TablePlanner() {
                         onRemoveTable={removeTable}
                         onMoveTable={moveTable}
                         onRenameTable={renameTable}
+                        onReorderGuests={reorderGuestsInTable}
                     />
                 ))}
 
@@ -751,29 +794,22 @@ export function TablePlanner() {
                             </div>
                         </div>
                     )}
-                    {!sidebarCollapsed && (
-                        <span className="mr-2 text-[10px] uppercase tracking-wide text-muted-foreground whitespace-nowrap">
-                            v{__APP_VERSION__} (build {__APP_BUILD__})
-                        </span>
-                    )}
                     <button
                         aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                         onClick={() => setSidebarCollapsed((v) => !v)}
                         className="h-7 w-7 rounded-md border bg-white hover:bg-blue-50 flex items-center justify-center shadow-sm"
                     >
                         {sidebarCollapsed ? (
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRightIcon className="w-4 h-4" />
                         ) : (
-                            <ChevronLeft className="w-4 h-4" />
+                            <ChevronLeftIcon className="w-4 h-4" />
                         )}
                     </button>
                 </div>
 
-                <div
-                    className={`flex-1 overflow-y-auto flex flex-col ${sidebarCollapsed ? "opacity-0 pointer-events-none select-none" : "opacity-100"} transition-opacity duration-200`}
-                >
+                <div id="sidebar-scroll" className={`flex-1 overflow-y-auto sidebar-scrollbar flex flex-col ${sidebarCollapsed ? "opacity-0 pointer-events-none select-none" : "opacity-100"} transition-opacity duration-200`}>
                     {!sidebarCollapsed && (
-                        <div className="flex flex-col flex-1">
+                        <div className="flex flex-col flex-1">{/* scrollable content */}
                             <Summary
                                 totalGuests={guests.length}
                                 assignedGuests={assignedGuests.length}
@@ -794,7 +830,7 @@ export function TablePlanner() {
                             <Separator />
                             <GuestForm onAddGuest={addGuest} tables={tables} />
                             <Separator />
-                            <AssignedGuestsList guests={assignedGuests} tables={tables} />
+                            <AssignedGuestsList guests={assignedGuests} tables={tables} defaultOpen={false} />
                             <GuestList
                                 guests={unassignedGuests}
                                 selectedGuests={selectedGuests}
@@ -803,6 +839,29 @@ export function TablePlanner() {
                             />
                         </div>
                     )}
+                </div>
+
+                <div className={`${sidebarCollapsed ? "hidden" : "flex"} items-center justify-between px-3 py-2 text-xs border-t border-border bg-background/95 backdrop-blur-sm flex-shrink-0`}> 
+                    <a
+                        href="https://github.com/gingi/tablio"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition"
+                        aria-label="Open GitHub repository"
+                    >
+                        <svg
+                            role="img"
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            className="w-4 h-4 fill-current"
+                        >
+                            <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.087-.744.084-.729.084-.729 1.205.084 1.84 1.237 1.84 1.237 1.07 1.835 2.809 1.304 3.495.997.108-.776.418-1.305.762-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.381 1.235-3.221-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.911 1.23 3.221 0 4.61-2.805 5.625-5.475 5.92.435.372.81 1.102.81 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+                        </svg>
+                        <span className="font-medium">GitHub</span>
+                    </a>
+                    <span className="text-[10px] tracking-tight text-muted-foreground whitespace-nowrap">
+                        v{appVersion} ({appBuild}{appCommit ? `-${appCommit}` : ""})
+                    </span>
                 </div>
             </div>
 
@@ -817,7 +876,7 @@ export function TablePlanner() {
                         disabled={zoom <= 0.3}
                         className="h-8 w-8 p-0"
                     >
-                        <ZoomOut className="h-4 w-4" />
+                        <ZoomOutIcon className="h-4 w-4" />
                     </Button>
                     <Button
                         size="sm"
@@ -834,7 +893,7 @@ export function TablePlanner() {
                         disabled={zoom >= 2}
                         className="h-8 w-8 p-0"
                     >
-                        <ZoomIn className="h-4 w-4" />
+                        <ZoomInIcon className="h-4 w-4" />
                     </Button>
                 </div>
 

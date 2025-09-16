@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { OTPInput, OTPInputContext } from "input-otp@1.4.2";
-import { MinusIcon } from "lucide-react@0.487.0";
+import { MinusIcon } from "../icons";
 
 import { cn } from "./utils";
 
@@ -43,8 +43,14 @@ function InputOTPSlot({
 }: React.ComponentProps<"div"> & {
     index: number;
 }) {
-    const inputOTPContext = React.useContext(OTPInputContext);
-    const { char, hasFakeCaret, isActive } = inputOTPContext?.slots[index] ?? {};
+    interface OTPSlotInfo { char?: string; hasFakeCaret?: boolean; isActive?: boolean }
+    interface OTPContextLike { slots?: OTPSlotInfo[] }
+    const inputOTPContext = React.useContext(OTPInputContext) as OTPContextLike | null;
+    const slotData: OTPSlotInfo =
+        inputOTPContext?.slots && Array.isArray(inputOTPContext.slots)
+            ? inputOTPContext.slots[index] || {}
+            : {};
+    const { char, hasFakeCaret, isActive } = slotData;
 
     return (
         <div

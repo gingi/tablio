@@ -24,25 +24,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Bump build number
-        if: ${{ !contains(github.event.head_commit.message, '[build-skip]') }}
-        run: |
-          set -e
-          FILE=build-number.json
-          if [ -f "$FILE" ]; then
-            CURRENT=$(jq -r '.build // 0' "$FILE")
-          else
-            CURRENT=0
-          fi
-          NEXT=$((CURRENT+1))
-          echo "{\"build\": $NEXT}" > "$FILE"
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add "$FILE"
-          git commit -m "chore: bump build number to $NEXT [build-skip]" || echo "No build number change"
-          git push
-          echo "Build number bumped to $NEXT; triggering new run and exiting early.";
-          exit 0
+      # Composite build id: run_number-shortSha passed as APP_BUILD to Vite
+      - name: Derive build metadata
+        id: meta
+        run: echo "APP_BUILD=${GITHUB_RUN_NUMBER}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -62,6 +47,7 @@ jobs:
       - name: Build
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
+          APP_BUILD: ${{ env.APP_BUILD }}
         run: npm run build
 
       - name: Upload artifact

@@ -22,14 +22,13 @@ describe("TableInfoDialog", () => {
                 onClose={() => undefined}
                 table={table}
                 onRemoveGuest={onRemoveGuest}
+                onReorderGuests={() => undefined}
             />
         );
         expect(screen.getByText("Alpha Table")).toBeInTheDocument();
         expect(screen.getByText("2/12")).toBeInTheDocument();
-        const buttons = screen.getAllByRole("button");
-        fireEvent.click(
-            buttons.find((btn) => btn.textContent === "" && btn !== buttons[buttons.length - 1])!
-        );
+        const removeBtn = screen.getByRole("button", { name: /remove alpha from table/i });
+        fireEvent.click(removeBtn);
         expect(onRemoveGuest).toHaveBeenCalled();
     });
 });

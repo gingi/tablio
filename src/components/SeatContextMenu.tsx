@@ -7,7 +7,7 @@ import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { X, User, UserX, Search } from "lucide-react";
+import { XIcon as X, UserIcon as User, UserXIcon as UserX, SearchIcon as Search } from "./icons";
 
 interface SeatContextMenuProps {
     isOpen: boolean;

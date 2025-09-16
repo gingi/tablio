@@ -7,18 +7,18 @@ import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-import { Search, GripVertical, ChevronDown, ChevronRight } from "lucide-react";
+import { SearchIcon as Search, GripVerticalIcon as GripVertical, ChevronDownIcon as ChevronDown, ChevronRightIcon as ChevronRight } from "./icons";
 
 interface AssignedGuestsListProps {
     guests: Guest[];
     tables: TableData[];
-    // onRemoveGuest: (guestId: string) => void; // Removed unused parameter
+    defaultOpen?: boolean;
 }
 
-export function AssignedGuestsList({ guests, tables }: AssignedGuestsListProps) {
+export function AssignedGuestsList({ guests, tables, defaultOpen = false }: AssignedGuestsListProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [categoryFilter, setCategoryFilter] = useState<string>("all");
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(defaultOpen);
 
     const filteredGuests = guests.filter((guest) => {
         const matchesSearch = guest.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -85,7 +85,7 @@ export function AssignedGuestsList({ guests, tables }: AssignedGuestsListProps) 
                     </Button>
                 </CollapsibleTrigger>
 
-                <CollapsibleContent>
+                <CollapsibleContent className="collapsible-anim">
                     <div className="px-4 pb-4 space-y-2">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -123,7 +123,7 @@ export function AssignedGuestsList({ guests, tables }: AssignedGuestsListProps) 
                             filteredGuests.map((guest) => (
                                 <Card
                                     key={guest.id}
-                                    className="p-3 cursor-grab hover:shadow-md transition-all active:cursor-grabbing"
+                                    className="p-3 cursor-grab hover:shadow-md transition-all active:cursor-grabbing card-fade-in"
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, guest)}
                                 >

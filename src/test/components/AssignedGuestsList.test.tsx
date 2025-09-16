@@ -15,6 +15,8 @@ describe("AssignedGuestsList", () => {
     test("shows assigned guests and search filter", () => {
         render(<AssignedGuestsList guests={guests} tables={tables} />);
         expect(screen.getByText(/Assigned Guests \(2\)/)).toBeInTheDocument();
+        // Open collapsible (starts closed by default)
+        fireEvent.click(screen.getByRole("button", { name: /assigned guests/i }));
         fireEvent.change(screen.getByPlaceholderText(/search assigned guests/i), {
             target: { value: "Two" },
         });
