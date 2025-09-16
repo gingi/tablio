@@ -511,6 +511,47 @@ export function TablePlanner() {
         [tables, removeGuestFromTableInternal, guests, addToHistory]
     );
 
+    // Reorder guests within a table (drag reorder inside TableInfoDialog)
+    const reorderGuestsInTable = useCallback(
+        (tableId: string, orderedGuestIds: string[]) => {
+            const table = tables.find((t) => t.id === tableId);
+            if (!table) return;
+            // Only proceed if there is an actual change
+            const currentIds = table.guests.map((g) => g.id);
+            if (currentIds.length === orderedGuestIds.length && currentIds.every((v, i) => v === orderedGuestIds[i])) {
+                return;
+            }
+
+            addToHistory("Reorder guests", guests, tables);
+
+            setTables((prev) =>
+                prev.map((t) => {
+                    if (t.id !== tableId) return t;
+                    // Rebuild guests array in new order, updating seatNumber sequentially
+                    const guestMap = new Map(t.guests.map((g) => [g.id, g] as const));
+                    const reordered: Guest[] = [];
+                    orderedGuestIds.forEach((id, idx) => {
+                        const g = guestMap.get(id);
+                        if (g) reordered.push({ ...g, seatNumber: idx });
+                    });
+                    return { ...t, guests: reordered };
+                })
+            );
+
+            // Update global guests seatNumber for those at this table
+            setGuests((prev) =>
+                prev.map((g) => {
+                    if (g.tableId === tableId) {
+                        const newIndex = orderedGuestIds.indexOf(g.id);
+                        if (newIndex !== -1) return { ...g, seatNumber: newIndex };
+                    }
+                    return g;
+                })
+            );
+        },
+        [tables, guests, addToHistory]
+    );
+
     const moveTable = useCallback((tableId: string, x: number, y: number) => {
         setTables((prev) =>
             prev.map((table) => (table.id === tableId ? { ...table, x, y } : table))
@@ -703,6 +744,7 @@ export function TablePlanner() {
                         onRemoveTable={removeTable}
                         onMoveTable={moveTable}
                         onRenameTable={renameTable}
+                        onReorderGuests={reorderGuestsInTable}
                     />
                 ))}
 

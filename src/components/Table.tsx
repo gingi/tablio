@@ -18,6 +18,7 @@ interface TableProps {
     onRemoveTable: (tableId: string) => void;
     onMoveTable: (tableId: string, x: number, y: number) => void;
     onRenameTable: (tableId: string, newName: string) => void;
+    onReorderGuests: (tableId: string, orderedGuestIds: string[]) => void;
 }
 
 export function Table({
@@ -30,6 +31,7 @@ export function Table({
     onRemoveGuest,
     onRemoveTable,
     onRenameTable,
+    onReorderGuests,
 }: TableProps) {
     const ref = useRef<HTMLDivElement>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -547,6 +549,7 @@ export function Table({
                 onClose={() => setShowInfoDialog(false)}
                 table={table}
                 onRemoveGuest={onRemoveGuest}
+                onReorderGuests={(ordered) => onReorderGuests(table.id, ordered)}
             />
         </div>
     );
