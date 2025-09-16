@@ -166,6 +166,7 @@ export function CSVImport({ onImport }: CSVImportProps) {
                             accept=".csv"
                             onChange={handleFileSelect}
                             className="hidden"
+                            aria-hidden="true"
                         />
 
                         {importResult && (

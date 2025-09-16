@@ -110,7 +110,7 @@ export function SeatContextMenu({
                 <div className="p-4">
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="font-medium">Seat {seatNumber}</h3>
-                        <Button size="sm" variant="ghost" className="w-6 h-6 p-0" onClick={onClose}>
+                        <Button size="sm" variant="ghost" className="w-6 h-6 p-0" onClick={onClose} aria-label="Close menu">
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
@@ -152,6 +152,7 @@ export function SeatContextMenu({
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-9 h-8"
+                                    aria-label="Search guests"
                                 />
                             </div>
 

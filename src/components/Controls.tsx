@@ -289,6 +289,8 @@ export function Controls({
                         accept=".json"
                         onChange={handleImportLayout}
                         className="hidden"
+                        tabIndex={-1}
+                        aria-hidden="true"
                     />
                     <Button
                         variant="outline"
