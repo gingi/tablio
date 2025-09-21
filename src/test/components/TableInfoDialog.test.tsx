@@ -9,7 +9,7 @@ const guests: Guest[] = [
     { id: "g2", name: "Beta", tableId: "t1", seatNumber: 1 },
 ];
 
-const table: TableData = { id: "t1", name: "Alpha Table", seats: 12, x: 0, y: 0, guests };
+const table: TableData = { id: "t1", name: "Alpha Table", seats: 12, x: 0, y: 0, guests, desiredMinSeats: 8, desiredMaxSeats: 12 };
 
 // Using minimal props consistent with component consumption pattern
 

@@ -25,10 +25,13 @@ export interface Guest {
 export interface TableData {
     id: string;
     name: string;
+    shape?: "oval" | "circle" | "rect"; // default oval for legacy
     seats: number;
     x: number;
     y: number;
     guests: Guest[];
+    desiredMinSeats: number; // target minimum occupancy for ideal status
+    desiredMaxSeats: number; // target maximum (often equals seats)
 }
 
 const SAMPLE_NAMES = [
@@ -95,10 +98,12 @@ const INITIAL_GUESTS: Guest[] = Array.from({ length: 50 }, (_, i) => ({
             : undefined,
 }));
 
+const LEGACY_MIN = 8;
+const LEGACY_MAX = 12;
 const INITIAL_TABLES: TableData[] = [
-    { id: "table-1", name: "Head Table", seats: 12, x: 500, y: 200, guests: [] },
-    { id: "table-2", name: "Family Table", seats: 12, x: 200, y: 400, guests: [] },
-    { id: "table-3", name: "Friends Table", seats: 12, x: 800, y: 400, guests: [] },
+    { id: "table-1", name: "Head Table", shape: "oval", seats: 12, x: 500, y: 200, guests: [], desiredMinSeats: LEGACY_MIN, desiredMaxSeats: LEGACY_MAX },
+    { id: "table-2", name: "Family Table", shape: "oval", seats: 12, x: 200, y: 400, guests: [], desiredMinSeats: LEGACY_MIN, desiredMaxSeats: LEGACY_MAX },
+    { id: "table-3", name: "Friends Table", shape: "oval", seats: 12, x: 800, y: 400, guests: [], desiredMinSeats: LEGACY_MIN, desiredMaxSeats: LEGACY_MAX },
 ];
 
 // App state interface for localStorage
@@ -107,6 +112,12 @@ interface AppState {
     tables: TableData[];
     timestamp: number;
 }
+
+// Legacy tables from persisted storage may lack desired min/max fields
+type LegacyTableData = Omit<TableData, "desiredMinSeats" | "desiredMaxSeats"> & {
+    desiredMinSeats?: number;
+    desiredMaxSeats?: number;
+};
 
 // History state for undo functionality
 interface HistoryState {
@@ -139,7 +150,18 @@ export function TablePlanner() {
             if (savedState) {
                 const parsed: AppState = JSON.parse(savedState);
                 setGuests(parsed.guests);
-                setTables(parsed.tables);
+                // Migrate legacy tables lacking desired min/max
+                setTables(
+                    parsed.tables.map((raw) => {
+                        const t = raw as LegacyTableData;
+                        return {
+                            ...t,
+                            shape: t.shape ?? "oval",
+                            desiredMinSeats: t.desiredMinSeats ?? (t.seats === 12 ? LEGACY_MIN : Math.min(t.seats, LEGACY_MIN)),
+                            desiredMaxSeats: t.desiredMaxSeats ?? (t.seats === 12 ? LEGACY_MAX : t.seats),
+                        };
+                    })
+                );
 
                 // Find the highest guest ID number to continue numbering
                 const maxGuestId = parsed.guests.reduce((max, guest) => {
@@ -439,7 +461,7 @@ export function TablePlanner() {
             const table = tables.find((t) => t.id === tableId);
             if (!table) return;
 
-            const availableSeats = 12 - table.guests.length;
+            const availableSeats = table.seats - table.guests.length;
             const guestsToAssign = guestIds.slice(0, availableSeats);
 
             if (guestsToAssign.length > 0) {
@@ -481,16 +503,23 @@ export function TablePlanner() {
     );
 
     const addTable = useCallback(
-        (_seats: number) => {
+        (config: { shape?: "oval" | "circle" | "rect"; seats: number; desiredMinSeats: number; desiredMaxSeats: number }) => {
             addToHistory("Add table", guests, tables);
             const count = tables.length;
+            const actualSeats = config.seats || 12;
             const newTable: TableData = {
                 id: `table-${Date.now()}`,
                 name: `Table ${count + 1}`,
-                seats: 12,
+                shape: config.shape || "oval",
+                seats: actualSeats,
                 x: 200 + (count % 4) * 250,
                 y: 150 + Math.floor(count / 4) * 250,
                 guests: [],
+                desiredMinSeats: Math.max(0, Math.min(config.desiredMinSeats, actualSeats)),
+                desiredMaxSeats: Math.max(
+                    Math.min(config.desiredMaxSeats, actualSeats),
+                    Math.max(1, Math.min(config.desiredMinSeats, actualSeats))
+                ),
             };
             setTables((prev) => [...prev, newTable]);
         },
@@ -557,6 +586,30 @@ export function TablePlanner() {
             prev.map((table) => (table.id === tableId ? { ...table, x, y } : table))
         );
     }, []);
+
+    const updateTableConfig = useCallback(
+        (tableId: string, config: { shape?: "oval" | "circle" | "rect"; seats?: number; desiredMinSeats?: number; desiredMaxSeats?: number }) => {
+            setTables((prev) =>
+                prev.map((t) => {
+                    if (t.id !== tableId) return t;
+                    let seats = config.seats ?? t.seats;
+                    // Block shrinking below current guests
+                    if (seats < t.guests.length) {
+                        toast.error(`Cannot reduce seats below current assigned (${t.guests.length}).`);
+                        seats = t.seats; // keep original
+                    }
+                    let desiredMin = config.desiredMinSeats ?? t.desiredMinSeats;
+                    let desiredMax = config.desiredMaxSeats ?? t.desiredMaxSeats;
+                    // Clamp relationships
+                    if (desiredMin < 0) desiredMin = 0;
+                    if (desiredMax < 1) desiredMax = 1;
+                    if (desiredMin > seats) desiredMin = seats;
+                    if (desiredMax > seats) desiredMax = seats;
+                    if (desiredMin > desiredMax) desiredMin = Math.min(desiredMin, desiredMax);
+                    return { ...t, seats, desiredMinSeats: desiredMin, desiredMaxSeats: desiredMax, shape: config.shape || t.shape || "oval" };
+                })
+            );
+        }, []);
 
     const renameTable = useCallback(
         (tableId: string, newName: string) => {
@@ -745,6 +798,7 @@ export function TablePlanner() {
                         onMoveTable={moveTable}
                         onRenameTable={renameTable}
                         onReorderGuests={reorderGuestsInTable}
+                        onUpdateTableConfig={updateTableConfig}
                     />
                 ))}
 

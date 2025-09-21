@@ -1,13 +1,15 @@
 import React, { useRef, useState } from "react";
 import { TableData, Guest } from "./TablePlanner";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "./ui/select";
 import { PlusIcon as Plus, DownloadIcon as Download, SaveIcon as Save, FolderOpenIcon as FolderOpen, Grid3X3Icon as Grid3X3, UndoIcon as Undo, RotateCcwIcon as RotateCcw } from "./icons";
 import { toast } from "sonner@2.0.3";
 import { CSVImport } from "./CSVImport";
 import { Separator } from "./ui/separator";
 
 interface ControlsProps {
-    onAddTable: (seats: number) => void;
+    onAddTable: (config: { shape?: "oval" | "circle" | "rect"; seats: number; desiredMinSeats: number; desiredMaxSeats: number }) => void;
     onImportGuests: (guests: Guest[]) => void;
     onImportLayout: (data: { guests: Guest[]; tables: TableData[] }) => void;
     onAutoLayout: () => void;
@@ -31,6 +33,37 @@ export function Controls({
 }: ControlsProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+    // New table config state (persisted)
+    const CONFIG_KEY = "table-default-config";
+    const stored = (() => {
+        try {
+            return JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}");
+        } catch {
+            return {};
+        }
+    })() as Partial<{ shape: string; seats: number; desiredMinSeats: number; desiredMaxSeats: number }>;
+    const [shape, setShape] = useState<string>(stored.shape || "oval");
+    const [seats, setSeats] = useState<number>(stored.seats || 12);
+    const [desiredMinSeats, setDesiredMinSeats] = useState<number>(stored.desiredMinSeats ?? 8);
+    const [desiredMaxSeats, setDesiredMaxSeats] = useState<number>(stored.desiredMaxSeats ?? 12);
+
+    // Persist config
+    React.useEffect(() => {
+        const data = { shape, seats, desiredMinSeats, desiredMaxSeats };
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(data));
+    }, [shape, seats, desiredMinSeats, desiredMaxSeats]);
+
+    // Validation
+    const validation = (() => {
+        if (seats < 1) return "Seats must be at least 1";
+        if (desiredMinSeats < 0) return "Min cannot be negative";
+        if (desiredMaxSeats < 1) return "Max must be at least 1";
+        if (desiredMinSeats > desiredMaxSeats) return "Min cannot exceed Max";
+        if (desiredMaxSeats > seats) return "Max cannot exceed Seats";
+        if (desiredMinSeats > seats) return "Min cannot exceed Seats";
+        return null;
+    })();
 
     const exportAssignments = () => {
         const assignments: { name: string; table: string }[] = [];
@@ -214,18 +247,81 @@ export function Controls({
                 <Separator />
 
                 <div>
-                    <div className="text-sm text-muted-foreground mb-2">
-                        Add New Table
+                    <div className="text-sm text-muted-foreground mb-2">New Table Configuration</div>
+                    <div className="space-y-2" data-no-select="true">
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                                <div className="text-[11px] font-medium">Shape</div>
+                                <Select value={shape} onValueChange={setShape}>
+                                    <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue placeholder="Shape" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="oval">Oval</SelectItem>
+                                        <SelectItem value="circle">Circle</SelectItem>
+                                        <SelectItem value="rect">Rectangle</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1">
+                                <div className="text-[11px] font-medium">Seats</div>
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    value={seats}
+                                    onChange={(e) => setSeats(Number(e.target.value) || 0)}
+                                    className="h-8 text-xs"
+                                    aria-label="Total seats"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                                <div className="text-[11px] font-medium">Desired Min</div>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={desiredMinSeats}
+                                    onChange={(e) => setDesiredMinSeats(Number(e.target.value) || 0)}
+                                    className="h-8 text-xs"
+                                    aria-label="Desired minimum seats"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <div className="text-[11px] font-medium">Desired Max</div>
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    value={desiredMaxSeats}
+                                    onChange={(e) => setDesiredMaxSeats(Number(e.target.value) || 0)}
+                                    className="h-8 text-xs"
+                                    aria-label="Desired maximum seats"
+                                />
+                            </div>
+                        </div>
+                        {validation && (
+                            <div className="text-[10px] text-red-600" role="alert">
+                                {validation}
+                            </div>
+                        )}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={!!validation}
+                            onClick={() =>
+                                onAddTable({
+                                    shape: shape as "oval" | "circle" | "rect",
+                                    seats,
+                                    desiredMinSeats,
+                                    desiredMaxSeats,
+                                })
+                            }
+                            className="flex items-center gap-1 w-full"
+                        >
+                            <Plus className="w-3 h-3" />
+                            Add {shape.charAt(0).toUpperCase() + shape.slice(1)} Table ({seats} seats)
+                        </Button>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onAddTable(12)}
-                        className="flex items-center gap-1 w-full"
-                    >
-                        <Plus className="w-3 h-3" />
-                        Add Oval Table (12 seats)
-                    </Button>
                 </div>
 
                 <div>

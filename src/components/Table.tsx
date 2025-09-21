@@ -3,9 +3,11 @@ import { TableData, Guest } from "./TablePlanner";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
+import { toast } from "sonner@2.0.3";
 import { SeatContextMenu } from "./SeatContextMenu";
 import { TableInfoDialog } from "./TableInfoDialog";
 import { XIcon as X, MoveIcon as Move, Edit2Icon as Edit2, CheckIcon as Check, InfoIcon as Info } from "./icons";
+import { generateSeatLayout } from "./seatLayout";
 
 interface TableProps {
     table: TableData;
@@ -19,6 +21,7 @@ interface TableProps {
     onMoveTable: (tableId: string, x: number, y: number) => void;
     onRenameTable: (tableId: string, newName: string) => void;
     onReorderGuests: (tableId: string, orderedGuestIds: string[]) => void;
+    onUpdateTableConfig: (tableId: string, config: { seats?: number; desiredMinSeats?: number; desiredMaxSeats?: number }) => void;
 }
 
 export function Table({
@@ -32,6 +35,7 @@ export function Table({
     onRemoveTable,
     onRenameTable,
     onReorderGuests,
+    onUpdateTableConfig,
 }: TableProps) {
     const ref = useRef<HTMLDivElement>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -52,6 +56,48 @@ export function Table({
 
     const [showInfoDialog, setShowInfoDialog] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+    const [showConfigDialog, setShowConfigDialog] = useState(false);
+
+    const [cfgSeats, setCfgSeats] = useState(table.seats);
+    const [cfgMin, setCfgMin] = useState(table.desiredMinSeats);
+    const [cfgMax, setCfgMax] = useState(table.desiredMaxSeats);
+    const [cfgName, setCfgName] = useState(table.name);
+
+    useEffect(() => {
+        // Sync when table changes (e.g., external update)
+        setCfgSeats(table.seats);
+        setCfgMin(table.desiredMinSeats);
+        setCfgMax(table.desiredMaxSeats);
+    }, [table.seats, table.desiredMinSeats, table.desiredMaxSeats]);
+    useEffect(() => {
+        setCfgName(table.name);
+    }, [table.name]);
+
+    const configValidation = () => {
+        if (cfgSeats < table.guests.length) return `Cannot set seats below current assigned (${table.guests.length})`;
+        if (cfgSeats < 1) return "Seats must be >=1";
+        if (cfgMin < 0) return "Min cannot be negative";
+        if (cfgMax < 1) return "Max must be >=1";
+        if (cfgMin > cfgMax) return "Min cannot exceed Max";
+        if (cfgMax > cfgSeats) return "Max cannot exceed Seats";
+        if (cfgMin > cfgSeats) return "Min cannot exceed Seats";
+        if (!cfgName.trim()) return "Name required";
+        return null;
+    };
+
+    const handleConfigSave = () => {
+        const err = configValidation();
+        if (err) {
+            toast.error(err);
+            return;
+        }
+        if (cfgName.trim() && cfgName.trim() !== table.name) {
+            onRenameTable(table.id, cfgName.trim());
+        }
+        onUpdateTableConfig(table.id, { seats: cfgSeats, desiredMinSeats: cfgMin, desiredMaxSeats: cfgMax });
+        toast.success("Table updated");
+        setShowConfigDialog(false);
+    };
 
     useEffect(() => {
         if (isEditing && inputRef.current) {
@@ -175,11 +221,14 @@ export function Table({
                 const item = JSON.parse(data);
 
                 if (item.isMultiple && item.ids.length > 1) {
-                    // Handle multiple guests
-                    const guestsToAssign = item.ids.slice(0, Math.min(item.ids.length, 12));
-                    guestsToAssign.forEach((guestId: string) => {
-                        onAssignGuest(guestId, table.id);
-                    });
+                    // Handle multiple guests respecting available seats
+                    const available = table.seats - table.guests.length;
+                    if (available > 0) {
+                        const guestsToAssign = item.ids.slice(0, Math.min(item.ids.length, available));
+                        guestsToAssign.forEach((guestId: string) => {
+                            onAssignGuest(guestId, table.id);
+                        });
+                    }
                 } else {
                     // Handle single guest - always allow assignment (will handle seat reassignment)
                     const guestId = item.ids?.[0] || item.primaryId;
@@ -193,93 +242,55 @@ export function Table({
         }
     };
 
-    // Oval table dimensions - always 12 seats (tuned for better spacing)
-    const tableWidth = 240;
-    const tableHeight = 160;
-    const seatCount = 12;
-    // Offset ring so seats sit just outside table edge
-    const seatRingOffsetX = 14; // horizontal offset from table edge
-    const seatRingOffsetY = 14; // vertical offset from table edge
-    const seatDiameter = 48; // uniform seat size (w-12 h-12)
+    // Generate seat layout based on shape
+    const layout = generateSeatLayout(table.shape || "oval", table.seats);
+    const tableWidth = layout.width;
+    const tableHeight = layout.height;
+    const seatPositions = layout.positions;
+    const seatDiameter = 48; // consistent across shapes
     const seatRadius = seatDiameter / 2;
-
-    // Precompute seat center positions with approximate equal arc-length spacing.
-    // Approach: sample ellipse finely, accumulate arc length, then pick points at regular intervals.
-    const xRadius = tableWidth / 2 + seatRingOffsetX;
-    const yRadius = tableHeight / 2 + seatRingOffsetY;
-    const samples = 720; // 0.5 degree increments for smoothness
-    const points: { t: number; x: number; y: number; s: number }[] = [];
-    let prevX = xRadius;
-    let prevY = 0;
-    let acc = 0;
-    for (let i = 0; i <= samples; i++) {
-        const t = (i / samples) * 2 * Math.PI;
-        const x = Math.cos(t) * xRadius;
-        const y = Math.sin(t) * yRadius;
-        if (i > 0) {
-            const dx = x - prevX;
-            const dy = y - prevY;
-            acc += Math.hypot(dx, dy);
-        }
-        points.push({ t, x, y, s: acc });
-        prevX = x;
-        prevY = y;
-    }
-    const totalPerimeter = acc;
-    const segment = totalPerimeter / seatCount;
-    const seatPositions = [] as { x: number; y: number }[];
-    for (let i = 0; i < seatCount; i++) {
-        const target = i * segment;
-        // binary search or linear scan; with 720 samples linear is fine
-        let chosen = points[0];
-        for (let j = 1; j < points.length; j++) {
-            if (points[j].s >= target) {
-                chosen = points[j];
-                break;
-            }
-        }
-        seatPositions.push({ x: chosen.x, y: chosen.y });
-    }
 
     // Determine table status based on occupancy
     const getTableStatus = () => {
         const count = table.guests.length;
-        // Empty
-        if (count === 0)
+        const min = table.desiredMinSeats;
+        const max = table.desiredMaxSeats;
+        if (count === 0) {
             return {
                 color: "bg-gray-100 border-gray-300",
-                text: `${count}/12`,
+                text: `${count}/${table.seats}`,
                 badge: "secondary",
                 badgeClass: "bg-gray-100 text-gray-600 border-gray-300",
             };
-        // Partial - low occupancy
-        if (count < 8)
+        }
+        if (count < min) {
             return {
                 color: "bg-yellow-50 border-yellow-400",
-                text: `${count}/12`,
+                text: `${count}/${table.seats}`,
                 badge: "default",
                 badgeClass: "bg-yellow-100 text-yellow-800 border-yellow-300",
             };
-        // Full capacity exactly -> BLUE styling as requested
-        if (count === 12)
-            return {
-                color: "bg-blue-50 border-blue-500",
-                text: `${count}/12`,
-                badge: "default",
-                badgeClass: "bg-blue-100 text-blue-800 border-blue-300",
-            };
-        // Medium/high but not yet full
-        if (count < 12)
+        }
+        if (count < max) {
             return {
                 color: "bg-green-50 border-green-400",
-                text: `${count}/12`,
+                text: `${count}/${table.seats}`,
                 badge: "default",
                 badgeClass: "bg-green-100 text-green-800 border-green-300",
             };
-        // Over-capacity (should not normally happen)
+        }
+        if (count === max) {
+            return {
+                color: "bg-blue-50 border-blue-500",
+                text: `${count}/${table.seats}`,
+                badge: "default",
+                badgeClass: "bg-blue-100 text-blue-800 border-blue-300",
+            };
+        }
+        // Above desired max (over capacity)
         return {
             color: "bg-red-50 border-red-400",
-            text: `${count}/12`,
+            text: `${count}/${table.seats}`,
             badge: "destructive",
             badgeClass: "bg-red-100 text-red-800 border-red-300",
         };
@@ -320,7 +331,7 @@ export function Table({
             >
                 {/* Table surface - oval shape */}
                 <div
-                    className={`table-surface relative rounded-full border-3 transition-all ${
+                    className={`table-surface relative border-3 transition-all ${
                         isOver && canDrop
                             ? "border-green-400 bg-green-100 shadow-lg scale-105"
                             : isOver && !canDrop
@@ -328,7 +339,7 @@ export function Table({
                                 : isSelected
                                     ? "border-blue-500 shadow-md"
                                     : tableStatus.color
-                    }`}
+                    } ${ (table.shape || "oval") === "rect" ? "rounded-lg" : "rounded-full"}`}
                     style={{
                         width: tableWidth,
                         height: tableHeight,
@@ -414,21 +425,7 @@ export function Table({
                         )}
                     </div>
 
-                    {/* Info button */}
-                    {table.guests.length > 0 && (
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            className="absolute -top-2 -right-12 w-6 h-6 rounded-full p-0 pointer-events-auto bg-white hover:bg-blue-50 border-blue-200 hover:border-blue-300"
-                            onClick={(e: React.MouseEvent) => {
-                                e.stopPropagation();
-                                setShowInfoDialog(true);
-                            }}
-                            title="View table guests"
-                        >
-                            <Info className="w-3 h-3 text-blue-600" />
-                        </Button>
-                    )}
+                    {/* Info button moved to overlay control bar */}
 
                     {/* Central overlay controls (remove + drag) */}
                     {isSelected && (
@@ -445,6 +442,33 @@ export function Table({
                                     title="Remove table"
                                 >
                                     <X className="w-3 h-3" />
+                                </Button>
+                                {table.guests.length > 0 && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="w-6 h-6 p-0"
+                                        onClick={(e: React.MouseEvent) => {
+                                            e.stopPropagation();
+                                            setShowInfoDialog(true);
+                                        }}
+                                        title="View guests"
+                                        aria-label="View table guests"
+                                    >
+                                        <Info className="w-3 h-3" />
+                                    </Button>
+                                )}
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-6 h-6 p-0"
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        setShowConfigDialog(true);
+                                    }}
+                                    title="Edit configuration"
+                                >
+                                    <Edit2 className="w-3 h-3" />
                                 </Button>
                                 <div
                                     ref={dragHandleRef}
@@ -552,6 +576,102 @@ export function Table({
                                     }}
                                 >
                                 Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {showConfigDialog && isSelected && (
+                    <div className="absolute inset-0 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby={`config-table-${table.id}`}>
+                        <div className="bg-white border rounded-md shadow-md p-4 w-72 space-y-3" data-no-select="true">
+                            <div className="flex items-center justify-between">
+                                <div id={`config-table-${table.id}`} className="text-xs font-semibold">Edit Table Config</div>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="w-6 h-6 p-0"
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        setShowConfigDialog(false);
+                                    }}
+                                    aria-label="Close configuration dialog"
+                                >
+                                    <X className="w-3 h-3" />
+                                </Button>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-medium" htmlFor={`name-${table.id}`}>Name</label>
+                                    <Input
+                                        id={`name-${table.id}`}
+                                        type="text"
+                                        value={cfgName}
+                                        onChange={(e) => setCfgName(e.target.value)}
+                                        className="h-7 text-xs"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-medium" htmlFor={`seats-${table.id}`}>Seats</label>
+                                    <Input
+                                        id={`seats-${table.id}`}
+                                        type="number"
+                                        min={table.guests.length}
+                                        value={cfgSeats}
+                                        onChange={(e) => setCfgSeats(Number(e.target.value) || 0)}
+                                        className="h-7 text-xs"
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="flex-1 space-y-1">
+                                        <label className="text-[10px] font-medium" htmlFor={`min-${table.id}`}>Desired Min</label>
+                                        <Input
+                                            id={`min-${table.id}`}
+                                            type="number"
+                                            min={0}
+                                            value={cfgMin}
+                                            onChange={(e) => setCfgMin(Number(e.target.value) || 0)}
+                                            className="h-7 text-xs"
+                                        />
+                                    </div>
+                                    <div className="flex-1 space-y-1">
+                                        <label className="text-[10px] font-medium" htmlFor={`max-${table.id}`}>Desired Max</label>
+                                        <Input
+                                            id={`max-${table.id}`}
+                                            type="number"
+                                            min={1}
+                                            value={cfgMax}
+                                            onChange={(e) => setCfgMax(Number(e.target.value) || 0)}
+                                            className="h-7 text-xs"
+                                        />
+                                    </div>
+                                </div>
+                                {configValidation() && (
+                                    <div className="text-[10px] text-red-600" role="alert">{configValidation()}</div>
+                                )}
+                            </div>
+                            <div className="flex gap-2 justify-end pt-1">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs"
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        setShowConfigDialog(false);
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                    disabled={!!configValidation()}
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        handleConfigSave();
+                                    }}
+                                >
+                                    Save
                                 </Button>
                             </div>
                         </div>
