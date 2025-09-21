@@ -36,20 +36,21 @@ export function SeatContextMenu({
 }: SeatContextMenuProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const searchInputRef = useRef<HTMLInputElement>(null);
-    const openedAtRef = useRef<number>(0);
+    const [canClose, setCanClose] = useState(false);
     const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
     // Reset search when menu opens
     useEffect(() => {
         if (isOpen) {
-            openedAtRef.current = performance.now();
             setSearchTerm("");
             setCategoryFilter("all");
-            // Defer focus to next frame to ensure element is mounted
+            setCanClose(false);
+            const t = setTimeout(() => setCanClose(true), 220); // delay enabling close to avoid initial click closing
             requestAnimationFrame(() => {
                 searchInputRef.current?.focus();
                 searchInputRef.current?.select();
             });
+            return () => clearTimeout(t);
         }
     }, [isOpen]);
 
@@ -102,23 +103,8 @@ export function SeatContextMenu({
                 type="button"
                 aria-label="Close"
                 className="absolute inset-0 bg-black/20 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 z-0"
-                onMouseDown={(e) => {
-                    // Ignore the initial click that opened the menu (race between opening & pointer up)
-                    if (performance.now() - openedAtRef.current < 180) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return;
-                    }
-                }}
-                onClick={(e) => {
-                    // Also guard click in case only click fires (keyboard activation)
-                    if (performance.now() - openedAtRef.current < 180) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return;
-                    }
-                    onClose();
-                }}
+                style={{ pointerEvents: canClose ? "auto" : "none" }}
+                onClick={() => canClose && onClose()}
             />
             <Card
                 className="absolute bg-white shadow-xl border w-80 z-10"
