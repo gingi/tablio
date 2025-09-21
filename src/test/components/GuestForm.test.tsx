@@ -3,7 +3,7 @@ import React from "react";
 import { GuestForm } from "@/components/GuestForm";
 import { describe, test, expect, vi } from "vitest";
 
-const tables = [{ id: "t1", name: "Table 1", seats: 12, x: 0, y: 0, guests: [] }];
+const tables = [{ id: "t1", name: "Table 1", seats: 12, x: 0, y: 0, guests: [], desiredMinSeats: 8, desiredMaxSeats: 12 }];
 
 describe("GuestForm", () => {
     test("opens dialog and adds guest", () => {

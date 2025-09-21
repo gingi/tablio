@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Guest, TableData } from "./TablePlanner";
 import { Button } from "./ui/button";
@@ -35,13 +35,21 @@ export function SeatContextMenu({
     currentTableName,
 }: SeatContextMenuProps) {
     const [searchTerm, setSearchTerm] = useState("");
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    const openedAtRef = useRef<number>(0);
     const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
     // Reset search when menu opens
     useEffect(() => {
         if (isOpen) {
+            openedAtRef.current = performance.now();
             setSearchTerm("");
             setCategoryFilter("all");
+            // Defer focus to next frame to ensure element is mounted
+            requestAnimationFrame(() => {
+                searchInputRef.current?.focus();
+                searchInputRef.current?.select();
+            });
         }
     }, [isOpen]);
 
@@ -93,11 +101,27 @@ export function SeatContextMenu({
             <button
                 type="button"
                 aria-label="Close"
-                className="absolute inset-0 bg-black/20 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                onClick={onClose}
+                className="absolute inset-0 bg-black/20 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 z-0"
+                onMouseDown={(e) => {
+                    // Ignore the initial click that opened the menu (race between opening & pointer up)
+                    if (performance.now() - openedAtRef.current < 180) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+                }}
+                onClick={(e) => {
+                    // Also guard click in case only click fires (keyboard activation)
+                    if (performance.now() - openedAtRef.current < 180) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+                    onClose();
+                }}
             />
             <Card
-                className="absolute bg-white shadow-xl border w-80"
+                className="absolute bg-white shadow-xl border w-80 z-10"
                 style={{
                     left: Math.max(
                         10,
@@ -150,6 +174,7 @@ export function SeatContextMenu({
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                                 <Input
+                                    ref={searchInputRef}
                                     placeholder="Search guests..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}

@@ -94,10 +94,10 @@ describe("Table", () => {
         await user.type(nameInput, "Renamed Table");
         const saveBtn = screen.getByRole("button", { name: /save/i });
         await user.click(saveBtn);
-    // Depending on environment, space may be collapsed; accept no-space variant
-    expect(onRename).toHaveBeenCalled();
-    const callArg = (onRename as any).mock.calls[0][1];
-    expect(["Renamed Table", "RenamedTable"]).toContain(callArg);
+        // Depending on environment, space may be collapsed; accept no-space variant
+        expect(onRename).toHaveBeenCalled();
+        const callArg = (onRename as any).mock.calls[0][1];
+        expect(["Renamed Table", "RenamedTable"]).toContain(callArg);
     });
 
     test("config validation prevents reducing seats below assigned", async () => {
@@ -128,7 +128,7 @@ describe("Table", () => {
         );
         const editBtn = screen.getByTitle(/edit configuration/i);
         await user.click(editBtn);
-    const seatsInput = screen.getByLabelText(/^Seats$/i) as HTMLInputElement;
+        const seatsInput = screen.getByLabelText(/^Seats$/i) as HTMLInputElement;
         await user.clear(seatsInput);
         await user.type(seatsInput, "2");
         expect(screen.getByRole("alert")).toHaveTextContent(/cannot set seats below current assigned/i);

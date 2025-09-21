@@ -17,6 +17,8 @@ describe("Controls destructive confirm", () => {
             tableId: id,
             seatNumber: i,
         })) as Guest[],
+        desiredMinSeats: 8,
+        desiredMaxSeats: 12,
     });
 
     test("shows and handles reset confirmation", () => {

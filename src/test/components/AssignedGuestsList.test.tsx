@@ -4,7 +4,7 @@ import { AssignedGuestsList } from "@/components/AssignedGuestsList";
 import type { Guest, TableData } from "@/components/TablePlanner";
 import { describe, test, expect } from "vitest";
 
-const tables: TableData[] = [{ id: "t1", name: "T1", seats: 12, x: 0, y: 0, guests: [] }];
+const tables: TableData[] = [{ id: "t1", name: "T1", seats: 12, x: 0, y: 0, guests: [], desiredMinSeats: 8, desiredMaxSeats: 12 }];
 
 const guests: Guest[] = [
     { id: "g1", name: "Guest One", tableId: "t1", seatNumber: 0 },

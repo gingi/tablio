@@ -11,6 +11,8 @@ const mkTable = (id: string, name: string, guests: Guest[] = []): TableData => (
     x: 0,
     y: 0,
     guests,
+    desiredMinSeats: 8,
+    desiredMaxSeats: 12,
 });
 
 describe("Controls", () => {
