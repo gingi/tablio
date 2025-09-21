@@ -156,21 +156,21 @@ export function TableInfoDialog({ isOpen, onClose, table, onRemoveGuest, onReord
                 <div className="space-y-4 flex-1 flex flex-col min-h-0">
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">
-                            {table.guests.length} of 12 seats occupied
+                            {table.guests.length} of {table.seats} seats capacity
                         </span>
-                        <Badge
-                            className={`text-xs border ${
-                                table.guests.length === 0
-                                    ? "bg-gray-100 text-gray-600 border-gray-300"
-                                    : table.guests.length < 8
-                                        ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                                        : table.guests.length <= 12
-                                            ? "bg-green-100 text-green-800 border-green-300"
-                                            : "bg-red-100 text-red-800 border-red-300"
-                            }`}
-                        >
-                            {table.guests.length}/12
-                        </Badge>
+                        {(() => {
+                            const count = table.guests.length;
+                            const min = table.desiredMinSeats;
+                            const max = table.desiredMaxSeats;
+                            let cls = "bg-gray-100 text-gray-600 border-gray-300";
+                            if (count > 0 && count < min) cls = "bg-yellow-100 text-yellow-800 border-yellow-300";
+                            else if (count >= min && count < max) cls = "bg-green-100 text-green-800 border-green-300";
+                            else if (count === max) cls = "bg-blue-100 text-blue-800 border-blue-300";
+                            else if (count > max) cls = "bg-red-100 text-red-800 border-red-300";
+                            return (
+                                <Badge className={`text-xs border ${cls}`}>{count}/{table.seats}</Badge>
+                            );
+                        })()}
                     </div>
 
                     <ScrollArea className="flex-1">

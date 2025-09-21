@@ -9,7 +9,7 @@ const guests: Guest[] = [
     { id: "g2", name: "Bob", category: "Friends" },
 ];
 
-const tables: TableData[] = [{ id: "t1", name: "Table 1", seats: 12, x: 0, y: 0, guests: [] }];
+const tables: TableData[] = [{ id: "t1", name: "Table 1", seats: 12, x: 0, y: 0, guests: [], desiredMinSeats: 8, desiredMaxSeats: 12 }];
 
 describe("SeatContextMenu", () => {
     test("filters and assigns guest", () => {

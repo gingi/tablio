@@ -75,32 +75,28 @@ export function Summary({ totalGuests, assignedGuests, tables }: SummaryProps) {
                         <div className="space-y-1">
                             {tables.map((table) => {
                                 const count = table.guests.length;
+                                const min = table.desiredMinSeats;
+                                const max = table.desiredMaxSeats;
                                 const getStatusColor = () => {
                                     if (count === 0) return "text-gray-500";
-                                    if (count < 8) return "text-yellow-600";
-                                    if (count <= 12) return "text-green-600";
-                                    return "text-red-600";
+                                    if (count < min) return "text-yellow-600";
+                                    if (count < max) return "text-green-600";
+                                    if (count === max) return "text-blue-600";
+                                    return "text-red-600"; // over capacity
                                 };
                                 const getStatusText = () => {
                                     if (count === 0) return "Empty";
-                                    if (count < 8) return "Under capacity";
-                                    if (count < 12) return "Ideal";
-                                    return "Full";
+                                    if (count < min) return "Under capacity";
+                                    if (count < max) return "Ideal";
+                                    if (count === max) return "Full";
+                                    return "Over";
                                 };
-
                                 return (
-                                    <div
-                                        key={table.id}
-                                        className="flex items-center justify-between text-xs"
-                                    >
+                                    <div key={table.id} className="flex items-center justify-between text-xs">
                                         <span className="truncate flex-1 mr-2">{table.name}</span>
                                         <div className="flex items-center gap-1">
-                                            <span className={getStatusColor()}>
-                                                {table.guests.length}/12
-                                            </span>
-                                            <span className={`text-xs ${getStatusColor()}`}>
-                                                ({getStatusText()})
-                                            </span>
+                                            <span className={getStatusColor()}>{count}/{table.seats}</span>
+                                            <span className={`text-xs ${getStatusColor()}`}>({getStatusText()})</span>
                                         </div>
                                     </div>
                                 );
@@ -113,26 +109,14 @@ export function Summary({ totalGuests, assignedGuests, tables }: SummaryProps) {
                     <Card className="p-3">
                         <div className="text-sm mb-2">Capacity Analysis</div>
                         <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span>Ideal (min ≤ guests &lt; max):</span><span className="text-green-600">{tables.filter((t) => t.guests.length >= t.desiredMinSeats && t.guests.length < t.desiredMaxSeats).length}</span></div>
                             <div className="flex justify-between">
-                                <span>Ideal tables (8-12):</span>
-                                <span className="text-green-600">
-                                    {
-                                        tables.filter(
-                                            (t) => t.guests.length >= 8 && t.guests.length <= 12
-                                        ).length
-                                    }
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Under capacity (&lt;8):</span>
+                                <span>Under capacity (&lt; min):</span>
                                 <span className="text-yellow-600">
-                                    {
-                                        tables.filter(
-                                            (t) => t.guests.length > 0 && t.guests.length < 8
-                                        ).length
-                                    }
+                                    {tables.filter((t) => t.guests.length > 0 && t.guests.length < t.desiredMinSeats).length}
                                 </span>
                             </div>
+                            <div className="flex justify-between"><span>Full (= max):</span><span className="text-blue-600">{tables.filter((t) => t.guests.length === t.desiredMaxSeats).length}</span></div>
                             <div className="flex justify-between">
                                 <span>Empty tables:</span>
                                 <span className="text-gray-500">

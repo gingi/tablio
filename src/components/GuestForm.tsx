@@ -147,7 +147,7 @@ export function GuestForm({ onAddGuest, tables = [] }: GuestFormProps) {
                                             <div className="flex items-center justify-between w-full">
                                                 <span>{table.name}</span>
                                                 <Badge variant="outline" className="ml-2 text-xs">
-                                                    {table.guests.length}/12
+                                                    {table.guests.length}/{table.seats}
                                                 </Badge>
                                             </div>
                                         </SelectItem>

@@ -25,10 +25,13 @@ export interface Guest {
 export interface TableData {
     id: string;
     name: string;
+    shape?: "oval" | "circle" | "rect"; // default oval for legacy
     seats: number;
     x: number;
     y: number;
     guests: Guest[];
+    desiredMinSeats: number; // target minimum occupancy for ideal status
+    desiredMaxSeats: number; // target maximum (often equals seats)
 }
 
 const SAMPLE_NAMES = [
@@ -95,10 +98,12 @@ const INITIAL_GUESTS: Guest[] = Array.from({ length: 50 }, (_, i) => ({
             : undefined,
 }));
 
+const LEGACY_MIN = 8;
+const LEGACY_MAX = 12;
 const INITIAL_TABLES: TableData[] = [
-    { id: "table-1", name: "Head Table", seats: 12, x: 500, y: 200, guests: [] },
-    { id: "table-2", name: "Family Table", seats: 12, x: 200, y: 400, guests: [] },
-    { id: "table-3", name: "Friends Table", seats: 12, x: 800, y: 400, guests: [] },
+    { id: "table-1", name: "Head Table", shape: "oval", seats: 12, x: 500, y: 200, guests: [], desiredMinSeats: LEGACY_MIN, desiredMaxSeats: LEGACY_MAX },
+    { id: "table-2", name: "Family Table", shape: "oval", seats: 12, x: 200, y: 400, guests: [], desiredMinSeats: LEGACY_MIN, desiredMaxSeats: LEGACY_MAX },
+    { id: "table-3", name: "Friends Table", shape: "oval", seats: 12, x: 800, y: 400, guests: [], desiredMinSeats: LEGACY_MIN, desiredMaxSeats: LEGACY_MAX },
 ];
 
 // App state interface for localStorage
@@ -107,6 +112,12 @@ interface AppState {
     tables: TableData[];
     timestamp: number;
 }
+
+// Legacy tables from persisted storage may lack desired min/max fields
+type LegacyTableData = Omit<TableData, "desiredMinSeats" | "desiredMaxSeats"> & {
+    desiredMinSeats?: number;
+    desiredMaxSeats?: number;
+};
 
 // History state for undo functionality
 interface HistoryState {
@@ -139,7 +150,18 @@ export function TablePlanner() {
             if (savedState) {
                 const parsed: AppState = JSON.parse(savedState);
                 setGuests(parsed.guests);
-                setTables(parsed.tables);
+                // Migrate legacy tables lacking desired min/max
+                setTables(
+                    parsed.tables.map((raw) => {
+                        const t = raw as LegacyTableData;
+                        return {
+                            ...t,
+                            shape: t.shape ?? "oval",
+                            desiredMinSeats: t.desiredMinSeats ?? (t.seats === 12 ? LEGACY_MIN : Math.min(t.seats, LEGACY_MIN)),
+                            desiredMaxSeats: t.desiredMaxSeats ?? (t.seats === 12 ? LEGACY_MAX : t.seats),
+                        };
+                    })
+                );
 
                 // Find the highest guest ID number to continue numbering
                 const maxGuestId = parsed.guests.reduce((max, guest) => {
@@ -241,7 +263,7 @@ export function TablePlanner() {
             // If a table is specified, check if it has space
             if (tableId) {
                 const table = tables.find((t) => t.id === tableId);
-                if (table && table.guests.length >= 12) {
+                if (table && table.guests.length >= table.seats) {
                     toast.error(`${table.name} is full`);
                     return;
                 }
@@ -269,10 +291,13 @@ export function TablePlanner() {
                                 table.guests.map((g) => g.seatNumber).filter((s) => s !== undefined)
                             );
                             let nextAvailableSeat = 0;
-                            while (occupiedSeats.has(nextAvailableSeat) && nextAvailableSeat < 12) {
+                            while (occupiedSeats.has(nextAvailableSeat) && nextAvailableSeat < table.seats) {
                                 nextAvailableSeat++;
                             }
 
+                            if (nextAvailableSeat >= table.seats) {
+                                return table; // capacity race condition safeguard
+                            }
                             const guestWithSeat = { ...newGuest, seatNumber: nextAvailableSeat };
                             return {
                                 ...table,
@@ -293,6 +318,81 @@ export function TablePlanner() {
         },
         [guests, tables, guestCounter, addToHistory]
     );
+
+    // One-time reconciliation to repair mismatches where guest.tableId exists but table.guests lacked entry (e.g. after increasing seats beyond previous hard cap)
+    const reconciledRef = useRef(false);
+    useEffect(() => {
+        if (reconciledRef.current) return;
+        if (guests.length === 0 || tables.length === 0) return;
+
+        const mismatch = guests.some(
+            (g) => g.tableId && !tables.find((t) => t.id === g.tableId)?.guests.find((tg) => tg.id === g.id)
+        );
+        if (!mismatch) {
+            reconciledRef.current = true;
+            return;
+        }
+
+        const tableMap = new Map<string, TableData>();
+        tables.forEach((t) => tableMap.set(t.id, { ...t, guests: [] }));
+        const guestsByTable = new Map<string, Guest[]>();
+        guests.forEach((g) => {
+            if (g.tableId && tableMap.has(g.tableId)) {
+                const arr = guestsByTable.get(g.tableId) || [];
+                arr.push(g);
+                guestsByTable.set(g.tableId, arr);
+            }
+        });
+
+        const overflow: string[] = [];
+        guestsByTable.forEach((list, tableId) => {
+            const baseTable = tableMap.get(tableId)!;
+            const used = new Set<number>();
+            const rebuilt: Guest[] = [];
+            list
+                .slice()
+                .sort((a, b) => {
+                    const sa = a.seatNumber ?? Number.MAX_SAFE_INTEGER;
+                    const sb = b.seatNumber ?? Number.MAX_SAFE_INTEGER;
+                    if (sa !== sb) return sa - sb;
+                    return a.name.localeCompare(b.name);
+                })
+                .forEach((g) => {
+                    let seat = g.seatNumber;
+                    if (seat === undefined || seat >= baseTable.seats || used.has(seat)) {
+                        seat = 0;
+                        while (used.has(seat) && seat < baseTable.seats) seat++;
+                        if (seat >= baseTable.seats) {
+                            overflow.push(g.id);
+                            return;
+                        }
+                    }
+                    used.add(seat);
+                    rebuilt.push({ ...g, tableId, seatNumber: seat });
+                });
+            rebuilt.sort((a, b) => (a.seatNumber || 0) - (b.seatNumber || 0));
+            tableMap.set(tableId, { ...baseTable, guests: rebuilt });
+        });
+
+        const updatedGuests = guests.map((g) => {
+            if (!g.tableId) return g;
+            const table = tableMap.get(g.tableId);
+            if (!table) return g;
+            const found = table.guests.find((tg) => tg.id === g.id);
+            if (found) return { ...g, seatNumber: found.seatNumber };
+            if (overflow.includes(g.id)) return { ...g, tableId: undefined, seatNumber: undefined };
+            return g;
+        });
+
+        setGuests(updatedGuests);
+        setTables(Array.from(tableMap.values()));
+        reconciledRef.current = true;
+        toast.info("Seat assignments reconciled", {
+            description: overflow.length
+                ? `${overflow.length} guest(s) unassigned due to full tables`
+                : "Previously missing seat entries repaired",
+        });
+    }, [guests, tables]);
 
     // Remove guest
     const _removeGuest = useCallback(
@@ -335,90 +435,65 @@ export function TablePlanner() {
             const guest = guests.find((g) => g.id === guestId);
             if (!guest) return;
 
-            // First, find any guest that might be displaced from the target seat
-            let displacedGuest: Guest | null = null;
-            if (seatNumber !== undefined) {
-                const targetTable = tables.find((t) => t.id === tableId);
-                if (targetTable) {
-                    displacedGuest =
-                        targetTable.guests.find((g) => g.seatNumber === seatNumber) || null;
+            const targetTable = tables.find((t) => t.id === tableId);
+            if (!targetTable) return;
+
+            // Determine effective seat number (compute if not provided)
+            let effectiveSeat = seatNumber;
+
+            if (effectiveSeat === undefined) {
+                const occupied = new Set(
+                    targetTable.guests
+                        .map((g) => g.seatNumber)
+                        .filter((s): s is number => s !== undefined)
+                );
+                let next = 0;
+                while (occupied.has(next) && next < targetTable.seats) next++;
+                if (next >= targetTable.seats) {
+                    // Table full – do nothing
+                    toast.error("Table is full");
+                    return;
                 }
+                effectiveSeat = next;
             }
 
-            // Show notification if displacing a guest
-            if (displacedGuest && displacedGuest.id !== guestId) {
-                const targetTable = tables.find((t) => t.id === tableId);
+            // Check for displaced guest
+            const displacedGuest = targetTable.guests.find(
+                (g) => g.seatNumber === effectiveSeat && g.id !== guestId
+            );
+            if (displacedGuest) {
                 toast.info(`${displacedGuest.name} was moved to unassigned guests`, {
-                    description: `${guest.name} took their seat at ${targetTable?.name || "the table"}`,
+                    description: `${guest.name} took their seat at ${targetTable.name}`,
                 });
             }
 
-            // Update guest records
+            // Update guests master list with new assignment & unassign displaced guest
             setGuests((prev) =>
                 prev.map((g) => {
                     if (g.id === guestId) {
-                        return { ...g, tableId, seatNumber: seatNumber ?? g.seatNumber };
+                        return { ...g, tableId, seatNumber: effectiveSeat };
                     }
-                    // If a guest is being displaced, unassign them
-                    if (displacedGuest && g.id === displacedGuest.id && g.id !== guestId) {
+                    if (displacedGuest && g.id === displacedGuest.id) {
                         return { ...g, tableId: undefined, seatNumber: undefined };
                     }
                     return g;
                 })
             );
 
+            // Update tables collection
             setTables((prev) =>
-                prev.map((table) => {
-                    if (table.id === tableId) {
-                        // Remove the guest being moved if they're already in this table
-                        let updatedGuests = table.guests.filter((g) => g.id !== guestId);
-
-                        if (seatNumber !== undefined) {
-                            // Remove any guest currently at the target seat
-                            updatedGuests = updatedGuests.filter(
-                                (g) => g.seatNumber !== seatNumber
-                            );
-
-                            // Add the new guest at the specified seat
-                            updatedGuests.push({ ...guest, tableId, seatNumber });
-
-                            // Sort by seat number to maintain order
-                            updatedGuests.sort((a, b) => (a.seatNumber || 0) - (b.seatNumber || 0));
-                        } else {
-                            // General assignment - add to next available seat
-                            const occupiedSeats = new Set(
-                                updatedGuests
-                                    .map((g) => g.seatNumber)
-                                    .filter((s) => s !== undefined)
-                            );
-                            let nextAvailableSeat = 0;
-                            while (occupiedSeats.has(nextAvailableSeat) && nextAvailableSeat < 12) {
-                                nextAvailableSeat++;
-                            }
-
-                            if (nextAvailableSeat < 12) {
-                                updatedGuests.push({
-                                    ...guest,
-                                    tableId,
-                                    seatNumber: nextAvailableSeat,
-                                });
-                                updatedGuests.sort(
-                                    (a, b) => (a.seatNumber || 0) - (b.seatNumber || 0)
-                                );
-                            }
-                        }
-
-                        return {
-                            ...table,
-                            guests: updatedGuests,
-                        };
-                    } else {
-                        // Remove guest from other tables (but keep displaced guest if different table)
-                        return {
-                            ...table,
-                            guests: table.guests.filter((g) => g.id !== guestId),
-                        };
+                prev.map((t) => {
+                    if (t.id === tableId) {
+                        // Remove guest being moved & any displaced guest from target
+                        const updated = t.guests.filter(
+                            (g) => g.id !== guestId && (!displacedGuest || g.id !== displacedGuest.id)
+                        );
+                        updated.push({ ...guest, tableId, seatNumber: effectiveSeat });
+                        updated.sort((a, b) => (a.seatNumber || 0) - (b.seatNumber || 0));
+                        return { ...t, guests: updated };
                     }
+                    // Remove moving guest from other tables
+                    return { ...t, guests: t.guests.filter((g) => g.id !== guestId) };
                 })
             );
         },
@@ -439,7 +514,7 @@ export function TablePlanner() {
             const table = tables.find((t) => t.id === tableId);
             if (!table) return;
 
-            const availableSeats = 12 - table.guests.length;
+            const availableSeats = table.seats - table.guests.length;
             const guestsToAssign = guestIds.slice(0, availableSeats);
 
             if (guestsToAssign.length > 0) {
@@ -481,16 +556,23 @@ export function TablePlanner() {
     );
 
     const addTable = useCallback(
-        (_seats: number) => {
+        (config: { shape?: "oval" | "circle" | "rect"; seats: number; desiredMinSeats: number; desiredMaxSeats: number }) => {
             addToHistory("Add table", guests, tables);
             const count = tables.length;
+            const actualSeats = config.seats || 12;
             const newTable: TableData = {
                 id: `table-${Date.now()}`,
                 name: `Table ${count + 1}`,
-                seats: 12,
+                shape: config.shape || "oval",
+                seats: actualSeats,
                 x: 200 + (count % 4) * 250,
                 y: 150 + Math.floor(count / 4) * 250,
                 guests: [],
+                desiredMinSeats: Math.max(0, Math.min(config.desiredMinSeats, actualSeats)),
+                desiredMaxSeats: Math.max(
+                    Math.min(config.desiredMaxSeats, actualSeats),
+                    Math.max(1, Math.min(config.desiredMinSeats, actualSeats))
+                ),
             };
             setTables((prev) => [...prev, newTable]);
         },
@@ -557,6 +639,30 @@ export function TablePlanner() {
             prev.map((table) => (table.id === tableId ? { ...table, x, y } : table))
         );
     }, []);
+
+    const updateTableConfig = useCallback(
+        (tableId: string, config: { shape?: "oval" | "circle" | "rect"; seats?: number; desiredMinSeats?: number; desiredMaxSeats?: number }) => {
+            setTables((prev) =>
+                prev.map((t) => {
+                    if (t.id !== tableId) return t;
+                    let seats = config.seats ?? t.seats;
+                    // Block shrinking below current guests
+                    if (seats < t.guests.length) {
+                        toast.error(`Cannot reduce seats below current assigned (${t.guests.length}).`);
+                        seats = t.seats; // keep original
+                    }
+                    let desiredMin = config.desiredMinSeats ?? t.desiredMinSeats;
+                    let desiredMax = config.desiredMaxSeats ?? t.desiredMaxSeats;
+                    // Clamp relationships
+                    if (desiredMin < 0) desiredMin = 0;
+                    if (desiredMax < 1) desiredMax = 1;
+                    if (desiredMin > seats) desiredMin = seats;
+                    if (desiredMax > seats) desiredMax = seats;
+                    if (desiredMin > desiredMax) desiredMin = Math.min(desiredMin, desiredMax);
+                    return { ...t, seats, desiredMinSeats: desiredMin, desiredMaxSeats: desiredMax, shape: config.shape || t.shape || "oval" };
+                })
+            );
+        }, []);
 
     const renameTable = useCallback(
         (tableId: string, newName: string) => {
@@ -745,6 +851,7 @@ export function TablePlanner() {
                         onMoveTable={moveTable}
                         onRenameTable={renameTable}
                         onReorderGuests={reorderGuestsInTable}
+                        onUpdateTableConfig={updateTableConfig}
                     />
                 ))}
 

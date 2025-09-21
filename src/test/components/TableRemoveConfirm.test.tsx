@@ -12,6 +12,8 @@ describe("Table remove confirmation", () => {
         x: 100,
         y: 100,
         guests: [],
+        desiredMinSeats: 8,
+        desiredMaxSeats: 12,
     };
 
     const noop = () => {};
@@ -31,6 +33,7 @@ describe("Table remove confirmation", () => {
                 onMoveTable={noop}
                 onRenameTable={noop}
                 onReorderGuests={noop}
+                onUpdateTableConfig={noop}
             />
         );
 
